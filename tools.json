@@ -1,1 +1,20 @@
-{ "items": [] }
+{
+  "items": [
+    {
+      "id": "2af2d723-e913-4459-ba74-8c3b671ce520",
+      "name": "업로드 관리",
+      "icon": "📤",
+      "url": "https://eoulrimstudio-upload.eoulrimstudio.workers.dev/admin",
+      "pinned": false,
+      "order": 0
+    },
+    {
+      "id": "9e2fdd80-b221-43bf-8b85-e2145ba02bc7",
+      "name": "작업 기록",
+      "icon": "📋",
+      "url": "https://shinhp3.github.io/eoulrimstudio-records/",
+      "pinned": false,
+      "order": 1
+    }
+  ]
+}
