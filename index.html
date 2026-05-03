@@ -11,6 +11,21 @@
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
+  <div id="file-protocol-warning" class="file-protocol-banner hidden" role="status">
+    <strong>file:// 로 연 상태입니다.</strong>
+    브라우저는 로컬 파일을 각각 다른 보안 출처로 취급해, 일부 스크립트·iframe·API 호출에서
+    “Unsafe attempt to load URL file:///…” 같은 오류가 날 수 있습니다.
+    <span class="file-protocol-banner__hint">
+      폴더에서 터미널을 열고 <code>npx --yes serve .</code> 또는 <code>python -m http.server 8080</code> 후
+      <code>http://localhost:…</code> 로 접속하거나, GitHub Pages 같은 <code>https://</code> 주소로 사용하세요.
+    </span>
+  </div>
+  <script>
+    if (location.protocol === "file:") {
+      document.getElementById("file-protocol-warning").classList.remove("hidden");
+    }
+  </script>
+
   <header class="app-header">
     <h1 class="app-title">어울림 스튜디오</h1>
     <nav class="tabs" aria-label="섹션">
@@ -162,10 +177,94 @@
   </div>
 
   <script>
-    const WORKER_URL = "https://eoulrimstudio-upload.eoulrimstudio.workers.dev";
+    const WORKER_URL = "https://eoulrimstudio-upload.eoulrimstudio.workers.dev".replace(/\/+$/, "");
     const SHA_HEADER = "X-GitHub-Content-Sha";
 
     const el = (id) => document.getElementById(id);
+
+    /** 첫 번째 최상위 `{ ... }` 블록만 잘라 파싱 (앞뒤 잡문자·중복 텍스트 대응) */
+    function extractBalancedJsonObject(s) {
+      const start = s.indexOf("{");
+      if (start < 0) return null;
+      let depth = 0;
+      let inStr = false;
+      let esc = false;
+      for (let i = start; i < s.length; i++) {
+        const c = s[i];
+        if (inStr) {
+          if (esc) {
+            esc = false;
+            continue;
+          }
+          if (c === "\\") {
+            esc = true;
+            continue;
+          }
+          if (c === '"') inStr = false;
+          continue;
+        }
+        if (c === '"') {
+          inStr = true;
+          continue;
+        }
+        if (c === "{") depth++;
+        else if (c === "}") {
+          depth--;
+          if (depth === 0) return s.slice(start, i + 1);
+        }
+      }
+      return null;
+    }
+
+    function jsonFileHint(apiLabel) {
+      if (apiLabel.includes("/tools")) return "tools.json";
+      if (apiLabel.includes("/records")) return "records.json";
+      return "저장소 JSON";
+    }
+
+    /** Worker JSON 본문 파싱 — 자세한 본문은 콘솔만 */
+    function parseWorkerJson(text, apiLabel) {
+      let trimmed = String(text).replace(/^\uFEFF/, "").trim();
+      if (!trimmed) {
+        console.warn(apiLabel, "빈 본문");
+        throw new Error(`${apiLabel}: 응답이 비어 있습니다.`);
+      }
+      if (trimmed.startsWith("<")) {
+        console.warn(apiLabel, "HTML 수신 (처음 400자)", trimmed.slice(0, 400));
+        throw new Error(`${apiLabel}: JSON 대신 HTML이 왔습니다. Worker 주소·배포를 확인하세요.`);
+      }
+      const hint = jsonFileHint(apiLabel);
+      try {
+        return JSON.parse(trimmed);
+      } catch (e1) {
+        const slice = extractBalancedJsonObject(trimmed);
+        if (slice) {
+          try {
+            return JSON.parse(slice);
+          } catch (e2) {
+            console.warn(apiLabel, "균형 블록 파싱 실패", e2.message, slice.slice(0, 400));
+          }
+        }
+        console.warn(apiLabel, "JSON 파싱 실패", e1.message, trimmed.slice(0, 400));
+        throw new Error(`${apiLabel}: JSON 파싱 실패 — GitHub의 ${hint} 내용을 확인하세요.`);
+      }
+    }
+
+    function tryParseJsonObject(text) {
+      const trimmed = String(text).replace(/^\uFEFF/, "").trim();
+      if (!trimmed) return {};
+      try {
+        return JSON.parse(trimmed);
+      } catch {
+        try {
+          const slice = extractBalancedJsonObject(trimmed);
+          if (slice) return JSON.parse(slice);
+        } catch {
+          /* ignore */
+        }
+        return {};
+      }
+    }
 
     let loadingCount = 0;
     function showLoading(show) {
@@ -211,20 +310,20 @@
         '<svg xmlns="http://www.w3.org/2000/svg" width="88" height="88"><rect fill="#e2e6ed" width="88" height="88"/><text x="44" y="48" text-anchor="middle" fill="#5c667a" font-size="11" font-family="sans-serif">no img</text></svg>'
       );
 
-    function dashboardPushError(msg) {
+    function dashboardFlushErrors(messages) {
       const box = el("dashboard-errors");
+      box.innerHTML = "";
+      if (!messages.length) return;
       const line = document.createElement("div");
       line.className = "dashboard-error";
-      line.textContent = msg;
+      line.style.whiteSpace = "pre-line";
+      line.textContent = messages.map((m) => "• " + m).join("\n");
       box.appendChild(line);
     }
 
-    function clearDashboardErrors() {
-      el("dashboard-errors").innerHTML = "";
-    }
-
     async function refreshDashboard() {
-      clearDashboardErrors();
+      el("dashboard-errors").innerHTML = "";
+      const dashErrMsgs = [];
       showLoading(true);
       try {
         const [listRes, recordsRes, toolsRes] = await Promise.all([
@@ -235,25 +334,34 @@
 
         let stlCount = "—";
         if (listRes.ok) {
-          const listText = await listRes.text();
-          const lj = JSON.parse(listText);
-          dashboardFiles = Array.isArray(lj.files) ? lj.files : [];
-          stlCount = String(dashboardFiles.length);
+          try {
+            const lj = parseWorkerJson(await listRes.text(), "GET /list");
+            dashboardFiles = Array.isArray(lj.files) ? lj.files : [];
+            stlCount = String(dashboardFiles.length);
+          } catch (e) {
+            dashErrMsgs.push(String(e.message || e));
+            dashboardFiles = [];
+          }
         } else {
-          dashboardPushError(`STL 목록: ${listRes.status} ${listRes.statusText || ""}`.trim());
+          dashErrMsgs.push(`STL 목록 HTTP ${listRes.status}`.trim());
           dashboardFiles = [];
         }
         el("stat-stl").textContent = stlCount;
 
         let recCount = "—";
         if (recordsRes.ok) {
-          const recordsText = await recordsRes.text();
-          const rj = JSON.parse(recordsText);
-          dashboardRecords = Array.isArray(rj.records) ? rj.records.slice() : [];
-          recordsSha = recordsRes.headers.get(SHA_HEADER) || "";
-          recCount = String(dashboardRecords.length);
+          try {
+            const rj = parseWorkerJson(await recordsRes.text(), "GET /records");
+            dashboardRecords = Array.isArray(rj.records) ? rj.records.slice() : [];
+            recordsSha = recordsRes.headers.get(SHA_HEADER) || "";
+            recCount = String(dashboardRecords.length);
+          } catch (e) {
+            dashErrMsgs.push(String(e.message || e));
+            dashboardRecords = [];
+            recordsSha = "";
+          }
         } else {
-          dashboardPushError(`계산 기록: ${recordsRes.status} ${recordsRes.statusText || ""}`.trim());
+          dashErrMsgs.push(`계산 기록 HTTP ${recordsRes.status}`.trim());
           dashboardRecords = [];
           recordsSha = "";
         }
@@ -261,14 +369,18 @@
 
         let toolsCount = "—";
         if (toolsRes.ok) {
-          const toolsText = await toolsRes.text();
-          const tj = JSON.parse(toolsText);
-          toolsCount = String(Array.isArray(tj.items) ? tj.items.length : 0);
+          try {
+            const tj = parseWorkerJson(await toolsRes.text(), "GET /tools");
+            toolsCount = String(Array.isArray(tj.items) ? tj.items.length : 0);
+          } catch (e) {
+            dashErrMsgs.push(String(e.message || e));
+          }
         } else {
-          dashboardPushError(`도구 링크: ${toolsRes.status} ${toolsRes.statusText || ""}`.trim());
+          dashErrMsgs.push(`도구 링크 HTTP ${toolsRes.status}`.trim());
         }
         el("stat-tools").textContent = toolsCount;
 
+        dashboardFlushErrors(dashErrMsgs);
         renderStlList();
         renderRecordsFiltered();
       } catch (e) {
@@ -461,8 +573,7 @@
     async function fetchRecordsFresh() {
       const recordsRes = await fetch(`${WORKER_URL}/records`, { method: "GET" });
       if (!recordsRes.ok) throw new Error(`계산 기록 불러오기 실패 (${recordsRes.status})`);
-      const recordsText = await recordsRes.text();
-      const rj = JSON.parse(recordsText);
+      const rj = parseWorkerJson(await recordsRes.text(), "GET /records");
       dashboardRecords = Array.isArray(rj.records) ? rj.records.slice() : [];
       recordsSha = recordsRes.headers.get(SHA_HEADER) || "";
     }
@@ -477,13 +588,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        let data = {};
-        try {
-          const putRecordsText = await res.text();
-          data = JSON.parse(putRecordsText);
-        } catch {
-          /* ignore */
-        }
+        const data = tryParseJsonObject(await res.text());
         if (!res.ok || data.success === false) {
           toast(data.error || `저장 실패 (${res.status})`);
           return;
@@ -575,27 +680,26 @@
         if (!res.ok) {
           throw new Error(`불러오기 실패 (${res.status})`);
         }
-        const toolsBodyText = await res.text();
-        const parsed = JSON.parse(toolsBodyText);
+        const parsed = parseWorkerJson(await res.text(), "GET /tools");
         if (!parsed.items || !Array.isArray(parsed.items)) {
           throw new Error("tools.json 형식이 올바르지 않습니다.");
         }
         currentSha = res.headers.get(SHA_HEADER) || "";
         if (parsed.items.length === 0) {
           linksData = normalizeOrders({ items: getDefaultItems() });
-          await persistLinks({ toastSuccess: false });
+          await persistLinks({ toastSuccess: false, silent: true });
         } else {
           linksData = normalizeOrders({ items: parsed.items });
         }
       } catch (e) {
-        toast(String(e.message || e));
+        console.warn("링크 허브 초기 로드", e.message || e);
         linksData = normalizeOrders({ items: getDefaultItems() });
         currentSha = "";
       }
     }
 
     async function persistLinks(options = {}) {
-      const { toastSuccess = true, message } = options;
+      const { toastSuccess = true, message, silent = false } = options;
       try {
         const body = { items: linksData.items };
         if (currentSha) body.sha = currentSha;
@@ -606,16 +710,12 @@
           body: JSON.stringify(body),
         });
 
-        let data = {};
-        try {
-          const putToolsText = await res.text();
-          data = JSON.parse(putToolsText);
-        } catch {
-          /* ignore */
-        }
+        const data = tryParseJsonObject(await res.text());
 
         if (!res.ok || data.success === false) {
-          toast(data.error || `저장 실패 (${res.status})`);
+          const errMsg = data.error || `저장 실패 (${res.status})`;
+          if (silent) console.warn("PUT /tools", errMsg);
+          else toast(errMsg);
           return;
         }
 
@@ -624,7 +724,8 @@
         }
         await refreshShaFromServer();
       } catch (e) {
-        toast(String(e.message || e));
+        if (silent) console.warn("persistLinks", e);
+        else toast(String(e.message || e));
       }
     }
 

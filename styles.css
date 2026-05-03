@@ -32,6 +32,36 @@ body.tab-links-active {
   padding-bottom: calc(var(--fab-size) + 48px);
 }
 
+.file-protocol-banner {
+  margin: 0;
+  padding: 12px 20px;
+  font-size: 0.85rem;
+  color: #92400e;
+  background: #fffbeb;
+  border-bottom: 1px solid #fcd34d;
+  line-height: 1.55;
+}
+
+.file-protocol-banner strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #78350f;
+}
+
+.file-protocol-banner__hint {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+.file-protocol-banner code {
+  font-size: 0.8em;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+}
+
 .app-header {
   display: flex;
   flex-wrap: wrap;
