@@ -15,6 +15,14 @@
       "url": "https://shinhp3.github.io/eoulrimstudio-records/",
       "pinned": false,
       "order": 0
+    },
+    {
+      "id": "f1bf94cb-360d-424a-af51-59fb74827d1e",
+      "name": "어울림 홈페이지",
+      "icon": "🔗",
+      "url": "https://eoulrimstudio.cafe24.com/",
+      "pinned": false,
+      "order": 1
     }
   ]
 }
