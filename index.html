@@ -96,6 +96,12 @@
               </span>
               STL 업로더
             </button>
+            <button type="button" class="sidebar-nav__btn" id="tab-calendar" data-tab="calendar">
+              <span class="sidebar-nav__ico" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              </span>
+              어울림 캘린더
+            </button>
             <button type="button" class="sidebar-nav__btn" id="tab-links" data-tab="links">
               <span class="sidebar-nav__ico" aria-hidden="true">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
@@ -256,6 +262,27 @@
             <div id="stl-embed-viewport" class="hub-preview-pane__viewport">
               <div class="hub-preview-pane__frame-slot">
                 <iframe id="stl-embed-frame" class="hub-preview-pane__frame" title="STL 업로드 관리"></iframe>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 탭: 어울림 캘린더 (GitHub Pages) -->
+        <section id="panel-calendar" class="tab-panel hidden" aria-label="어울림 캘린더">
+          <div class="tool-embed">
+            <div class="tool-embed__bar hub-preview-pane__bar">
+              <span class="tool-embed__title">어울림 캘린더</span>
+              <span class="tool-embed__host">shinhp3.github.io/eoulrimstudio-calendar</span>
+              <div class="hub-preview-zoom-wrap hub-preview-zoom-wrap--slider" role="group" aria-label="화면 배율">
+                <span class="hub-preview-zoom-label">배율</span>
+                <input type="range" id="calendar-embed-zoom" class="hub-preview-zoom-range" min="50" max="100" value="85" step="1" aria-valuemin="50" aria-valuemax="100" aria-valuenow="85" aria-valuetext="85%" />
+                <span class="hub-preview-zoom-value" id="calendar-embed-zoom-value">85%</span>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" id="calendar-embed-new-tab">새 탭</button>
+            </div>
+            <div id="calendar-embed-viewport" class="hub-preview-pane__viewport">
+              <div class="hub-preview-pane__frame-slot">
+                <iframe id="calendar-embed-frame" class="hub-preview-pane__frame" title="어울림 캘린더"></iframe>
               </div>
             </div>
           </div>
@@ -805,6 +832,7 @@
     /* ---------- 탭 ---------- */
     const EMBED_CALC_URL = "https://shinhp3.github.io/eoulrimstudio-records/";
     const EMBED_STL_URL = "https://shinhp3.github.io/eoulrimstudio-models/admin/";
+    const EMBED_CALENDAR_URL = "https://shinhp3.github.io/eoulrimstudio-calendar/";
 
     function ensureCalcEmbedLoaded() {
       const f = el("calc-embed-frame");
@@ -820,17 +848,26 @@
       f.dataset.embedLoaded = "1";
     }
 
+    function ensureCalendarEmbedLoaded() {
+      const f = el("calendar-embed-frame");
+      if (!f || f.dataset.embedLoaded === "1") return;
+      f.src = EMBED_CALENDAR_URL;
+      f.dataset.embedLoaded = "1";
+    }
+
     async function setTab(name) {
       el("tab-dashboard").classList.toggle("active", name === "dashboard");
       el("tab-calc").classList.toggle("active", name === "calc");
       el("tab-stl").classList.toggle("active", name === "stl");
+      el("tab-calendar").classList.toggle("active", name === "calendar");
       el("tab-links").classList.toggle("active", name === "links");
       el("panel-dashboard").classList.toggle("hidden", name !== "dashboard");
       el("panel-calc").classList.toggle("hidden", name !== "calc");
       el("panel-stl").classList.toggle("hidden", name !== "stl");
+      el("panel-calendar").classList.toggle("hidden", name !== "calendar");
       el("panel-links").classList.toggle("hidden", name !== "links");
       document.body.classList.toggle("tab-links-active", name === "links");
-      document.body.classList.toggle("tab-tool-embed-active", name === "calc" || name === "stl");
+      document.body.classList.toggle("tab-tool-embed-active", name === "calc" || name === "stl" || name === "calendar");
 
       const heading = el("page-heading");
       const sub = el("page-subtitle");
@@ -854,6 +891,10 @@
         heading.textContent = "STL 업로더";
         sub.textContent = "모델 업로드 및 저장소 models/ 관리 화면 (GitHub Pages).";
         ensureStlEmbedLoaded();
+      } else if (name === "calendar") {
+        heading.textContent = "어울림 캘린더";
+        sub.textContent = "월간 달력·메모 (GitHub Pages).";
+        ensureCalendarEmbedLoaded();
       } else {
         heading.textContent = "링크 허브";
         sub.textContent = "자주 쓰는 도구를 고정하고 이 창에서 바로 엽니다.";
@@ -863,14 +904,16 @@
     el("tab-dashboard").addEventListener("click", () => void setTab("dashboard"));
     el("tab-calc").addEventListener("click", () => void setTab("calc"));
     el("tab-stl").addEventListener("click", () => void setTab("stl"));
+    el("tab-calendar").addEventListener("click", () => void setTab("calendar"));
     el("tab-links").addEventListener("click", () => void setTab("links"));
 
     const SIDEBAR_NAV_ORDER_KEY = "eoulrimstudio-tools.sidebarNavOrder";
-    const SIDEBAR_TAB_ORDER_DEFAULT = ["dashboard", "calc", "stl", "links"];
+    const SIDEBAR_TAB_ORDER_DEFAULT = ["dashboard", "calc", "stl", "calendar", "links"];
     const SIDEBAR_TAB_LABELS = {
       dashboard: "대시보드",
       calc: "석고 계산기",
       stl: "STL 업로더",
+      calendar: "어울림 캘린더",
       links: "링크 허브",
     };
 
@@ -910,6 +953,7 @@
         dashboard: el("tab-dashboard"),
         calc: el("tab-calc"),
         stl: el("tab-stl"),
+        calendar: el("tab-calendar"),
         links: el("tab-links"),
       };
       order.forEach((id) => {
@@ -1102,6 +1146,7 @@
     const HUB_PREVIEW_ZOOM_KEY = "eoulrimstudio-tools.hubPreviewZoom";
     const EMBED_CALC_ZOOM_KEY = "eoulrimstudio-tools.embedCalcZoom";
     const EMBED_STL_ZOOM_KEY = "eoulrimstudio-tools.embedStlZoom";
+    const EMBED_CALENDAR_ZOOM_KEY = "eoulrimstudio-tools.embedCalendarZoom";
 
     /** 저장값: 50~100 정수(%). 예전 소수 스케일(0.85 등)도 읽어서 변환 */
     function normalizeStoredZoomPercent(raw) {
@@ -1883,7 +1928,73 @@
 
     /* ---------- 링크 허브 ---------- */
 
-    const EMOJI_OPTIONS = ["🔗", "📁", "📋", "📊", "📦", "🛠️", "📤", "📝", "🗂️", "🖼️", "📌", "🔧"];
+    const EMOJI_OPTIONS = [
+      "⭐",
+      "🌟",
+      "✨",
+      "💫",
+      "🔗",
+      "📁",
+      "📋",
+      "📊",
+      "📦",
+      "🛠️",
+      "📤",
+      "📝",
+      "🗂️",
+      "🖼️",
+      "📌",
+      "🔧",
+      "📎",
+      "💡",
+      "🔍",
+      "📱",
+      "💻",
+      "🌐",
+      "⚙️",
+      "📈",
+      "📉",
+      "🏠",
+      "❤️",
+      "✅",
+      "⚠️",
+      "🔒",
+      "🔑",
+      "📧",
+      "🎨",
+      "🎵",
+      "📚",
+      "✏️",
+      "🚀",
+      "💼",
+      "📞",
+      "🔔",
+      "🏷️",
+      "🔖",
+      "☁️",
+      "📍",
+      "🗺️",
+      "🎯",
+      "📅",
+      "📆",
+      "🗓️",
+      "⏰",
+      "💎",
+      "🏆",
+      "🎁",
+      "🔥",
+      "🌈",
+      "☀️",
+      "🌙",
+      "🎬",
+      "🖨️",
+      "🗃️",
+      "📑",
+      "🤝",
+      "💬",
+      "❓",
+      "💭",
+    ];
 
     function getDefaultItems() {
       return [
@@ -2385,6 +2496,9 @@
     el("stl-embed-new-tab").addEventListener("click", () => {
       window.open(EMBED_STL_URL, "_blank", "noopener,noreferrer");
     });
+    el("calendar-embed-new-tab").addEventListener("click", () => {
+      window.open(EMBED_CALENDAR_URL, "_blank", "noopener,noreferrer");
+    });
 
     window.addEventListener("DOMContentLoaded", async () => {
       await applyWorkerAuthGateOnLoad();
@@ -2397,6 +2511,7 @@
       initHubPreviewZoomControl();
       initEmbedZoomControl("calc-embed-zoom", "calc-embed-zoom-value", "calc-embed-viewport", EMBED_CALC_ZOOM_KEY);
       initEmbedZoomControl("stl-embed-zoom", "stl-embed-zoom-value", "stl-embed-viewport", EMBED_STL_ZOOM_KEY);
+      initEmbedZoomControl("calendar-embed-zoom", "calendar-embed-zoom-value", "calendar-embed-viewport", EMBED_CALENDAR_ZOOM_KEY);
       await refreshDashboard();
       buildEmojiGrid();
       await loadLinksFromStorage();

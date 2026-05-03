@@ -1592,8 +1592,11 @@ html.access-gate-active .app-shell {
 
 .emoji-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(8, 1fr);
   gap: 8px;
+  max-height: min(280px, 42vh);
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .emoji-btn {
@@ -2153,7 +2156,8 @@ html.access-gate-active .app-shell {
   }
 
   .emoji-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
+    max-height: min(240px, 38vh);
   }
 
   /* STL 패널 요약: 제목·메타가 한 줄에 너무 붙지 않도록 */
