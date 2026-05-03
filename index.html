@@ -235,7 +235,8 @@
 
         let stlCount = "—";
         if (listRes.ok) {
-          const lj = await listRes.json();
+          const listText = await listRes.text();
+          const lj = JSON.parse(listText);
           dashboardFiles = Array.isArray(lj.files) ? lj.files : [];
           stlCount = String(dashboardFiles.length);
         } else {
@@ -246,7 +247,8 @@
 
         let recCount = "—";
         if (recordsRes.ok) {
-          const rj = await recordsRes.json();
+          const recordsText = await recordsRes.text();
+          const rj = JSON.parse(recordsText);
           dashboardRecords = Array.isArray(rj.records) ? rj.records.slice() : [];
           recordsSha = recordsRes.headers.get(SHA_HEADER) || "";
           recCount = String(dashboardRecords.length);
@@ -259,7 +261,8 @@
 
         let toolsCount = "—";
         if (toolsRes.ok) {
-          const tj = await toolsRes.json();
+          const toolsText = await toolsRes.text();
+          const tj = JSON.parse(toolsText);
           toolsCount = String(Array.isArray(tj.items) ? tj.items.length : 0);
         } else {
           dashboardPushError(`도구 링크: ${toolsRes.status} ${toolsRes.statusText || ""}`.trim());
@@ -458,7 +461,8 @@
     async function fetchRecordsFresh() {
       const recordsRes = await fetch(`${WORKER_URL}/records`, { method: "GET" });
       if (!recordsRes.ok) throw new Error(`계산 기록 불러오기 실패 (${recordsRes.status})`);
-      const rj = await recordsRes.json();
+      const recordsText = await recordsRes.text();
+      const rj = JSON.parse(recordsText);
       dashboardRecords = Array.isArray(rj.records) ? rj.records.slice() : [];
       recordsSha = recordsRes.headers.get(SHA_HEADER) || "";
     }
@@ -475,7 +479,8 @@
         });
         let data = {};
         try {
-          data = await res.json();
+          const putRecordsText = await res.text();
+          data = JSON.parse(putRecordsText);
         } catch {
           /* ignore */
         }
@@ -570,7 +575,8 @@
         if (!res.ok) {
           throw new Error(`불러오기 실패 (${res.status})`);
         }
-        const parsed = await res.json();
+        const toolsBodyText = await res.text();
+        const parsed = JSON.parse(toolsBodyText);
         if (!parsed.items || !Array.isArray(parsed.items)) {
           throw new Error("tools.json 형식이 올바르지 않습니다.");
         }
@@ -602,7 +608,8 @@
 
         let data = {};
         try {
-          data = await res.json();
+          const putToolsText = await res.text();
+          data = JSON.parse(putToolsText);
         } catch {
           /* ignore */
         }
