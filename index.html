@@ -153,7 +153,12 @@
                   <span class="dash-panel__summary-main dash-panel__summary-main--toolbar">
                     <span class="dash-expand-chevron" aria-hidden="true"></span>
                     <span class="dash-panel__summary-text dash-panel__summary-text--grow">
-                      <span class="dash-panel__title">STL 모델</span>
+                      <span class="dash-panel__title-cluster">
+                        <span class="dash-panel__title">STL 모델</span>
+                        <button type="button" class="dash-panel-refresh" id="dash-refresh-stl" aria-label="STL 목록 새로고침" title="저장소에서 다시 불러오기">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 11-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                        </button>
+                      </span>
                     </span>
                     <div class="records-toolbar records-toolbar--summary">
                       <label class="sr-only" for="stl-sort">정렬</label>
@@ -176,7 +181,12 @@
                   <span class="dash-panel__summary-main dash-panel__summary-main--toolbar">
                     <span class="dash-expand-chevron" aria-hidden="true"></span>
                     <span class="dash-panel__summary-text dash-panel__summary-text--grow">
-                      <span class="dash-panel__title">계산 기록</span>
+                      <span class="dash-panel__title-cluster">
+                        <span class="dash-panel__title">계산 기록</span>
+                        <button type="button" class="dash-panel-refresh" id="dash-refresh-records" aria-label="계산 기록 새로고침" title="저장소에서 다시 불러오기">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 11-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                        </button>
+                      </span>
                     </span>
                     <div class="records-toolbar records-toolbar--summary">
                       <label class="sr-only" for="records-sort">정렬</label>
@@ -1279,6 +1289,35 @@
       }
     }
 
+    async function refreshDashboardStlPanel() {
+      el("dashboard-errors").innerHTML = "";
+      showLoading(true);
+      try {
+        const listRes = await fetch(`${WORKER_URL}/list`, { method: "GET" });
+        if (listRes.ok) {
+          try {
+            const lj = parseWorkerJson(await listRes.text(), "GET /list");
+            dashboardFiles = Array.isArray(lj.files) ? lj.files : [];
+            el("stat-stl").textContent = String(dashboardFiles.length);
+            dashboardFlushErrors([]);
+          } catch (e) {
+            dashboardFlushErrors([String(e.message || e)]);
+            dashboardFiles = [];
+            el("stat-stl").textContent = "—";
+          }
+        } else {
+          dashboardFlushErrors([`STL 목록 HTTP ${listRes.status}`.trim()]);
+          dashboardFiles = [];
+          el("stat-stl").textContent = "—";
+        }
+        renderStlList();
+      } catch (e) {
+        toast(String(e.message || e));
+      } finally {
+        showLoading(false);
+      }
+    }
+
     const STL_TIMESTAMP_FIELDS = [
       "uploadedAt",
       "updatedAt",
@@ -1691,6 +1730,35 @@
       dashboardRecords = Array.isArray(rj.records) ? rj.records.slice() : [];
       recordsSha = recordsRes.headers.get(SHA_HEADER) || "";
     }
+
+    async function refreshDashboardRecordsPanel() {
+      el("dashboard-errors").innerHTML = "";
+      showLoading(true);
+      try {
+        await fetchRecordsFresh();
+        el("stat-records").textContent = String(dashboardRecords.length);
+        dashboardFlushErrors([]);
+        syncRecordsViews();
+      } catch (e) {
+        toast(String(e.message || e));
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function bindDashPanelRefresh(btnId, fn) {
+      const n = el(btnId);
+      if (!n) return;
+      n.addEventListener("pointerdown", (e) => e.stopPropagation());
+      n.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        void fn();
+      });
+    }
+
+    bindDashPanelRefresh("dash-refresh-stl", refreshDashboardStlPanel);
+    bindDashPanelRefresh("dash-refresh-records", refreshDashboardRecordsPanel);
 
     async function saveRecordsPayload(records) {
       showLoading(true);

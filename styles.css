@@ -41,6 +41,10 @@
   padding: 0;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: "Noto Sans KR", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   background: var(--canvas);
@@ -429,9 +433,13 @@ body {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1fr 1.15fr;
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
   align-items: start;
+}
+
+.dashboard-grid > details.dash-panel {
+  min-width: 0;
 }
 
 details.dash-panel {
@@ -454,6 +462,11 @@ details.dash-panel > summary.dash-panel__head {
   padding: 16px 20px;
   border-bottom: 1px solid transparent;
   background: linear-gradient(180deg, #fafbfc 0%, var(--surface) 100%);
+}
+
+details.dash-panel > summary.dash-panel__head--toolbar {
+  min-height: 64px;
+  box-sizing: border-box;
 }
 
 details.dash-panel[open] > summary.dash-panel__head {
@@ -500,7 +513,50 @@ details.dash-panel > summary::-webkit-details-marker {
   gap: 8px;
 }
 
+/* 대시보드 STL·계산 기록: 제목(+새로고침) 줄 */
+.dash-panel__title-cluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.dash-panel-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.dash-panel-refresh:hover {
+  background: rgba(15, 23, 42, 0.1);
+  color: var(--text);
+}
+
+.dash-panel-refresh:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.dash-panel-refresh svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* 대시보드 STL·계산 기록: 제목·메타 한 줄, 길면 말줄임 */
+.dash-panel--with-toolbar .dash-panel__summary-main--toolbar .dash-panel__title-cluster {
+  overflow: hidden;
+}
+
 .dash-panel--with-toolbar .dash-panel__summary-main--toolbar .dash-panel__title {
   white-space: nowrap;
   overflow: hidden;
@@ -533,7 +589,7 @@ details.dash-panel > summary::-webkit-details-marker {
   top: 50%;
   width: 6px;
   height: 6px;
-  margin-top: -2px;
+  margin-top: 0;
   border-right: 2px solid var(--text-muted);
   border-bottom: 2px solid var(--text-muted);
   transform: translate(-50%, -50%) rotate(45deg);
@@ -542,7 +598,6 @@ details.dash-panel > summary::-webkit-details-marker {
 
 details.dash-panel[open] > summary .dash-expand-chevron::before {
   transform: translate(-50%, -50%) rotate(-135deg);
-  margin-top: 2px;
 }
 
 .dash-panel__head--toolbar {
@@ -749,11 +804,12 @@ details.dash-panel[open] > summary .dash-expand-chevron::before {
 
 .record-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   flex-wrap: nowrap;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
   align-self: center;
+  align-items: center;
 }
 
 .empty-state {
@@ -2055,16 +2111,17 @@ html.access-gate-active .app-shell {
   .record-actions {
     grid-column: 3;
     grid-row: 1;
-    flex-direction: column;
+    flex-direction: row;
     flex-wrap: nowrap;
-    justify-content: center;
+    justify-content: flex-end;
     align-self: center;
-    align-items: stretch;
+    align-items: center;
     width: auto;
     gap: 6px;
   }
 
   .record-actions .btn {
+    flex: 0 0 auto;
     min-height: 36px;
     padding-left: 10px;
     padding-right: 10px;
