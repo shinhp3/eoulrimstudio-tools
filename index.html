@@ -19,7 +19,49 @@
     })();
   </script>
 
-  <div class="app-shell">
+  <script>
+    (function () {
+      try {
+        var H = "eoulrimstudio-tools.accessPasswordHash";
+        var S = "eoulrimstudio-tools.accessUnlocked";
+        var raw = localStorage.getItem(H);
+        var need = false;
+        if (raw) {
+          try {
+            var p = JSON.parse(raw);
+            need = !!(p && p.salt && p.hash);
+          } catch (e) {
+            need = false;
+          }
+        }
+        var ok = sessionStorage.getItem(S) === "1";
+        if (need && !ok) {
+          document.documentElement.classList.add("access-gate-active");
+          requestAnimationFrame(function () {
+            var shell = document.getElementById("app-shell");
+            if (shell) shell.setAttribute("aria-hidden", "true");
+          });
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <div id="access-gate-overlay" class="access-gate-overlay" role="dialog" aria-modal="true" aria-labelledby="access-gate-title">
+    <div class="access-gate-card">
+      <h2 class="access-gate-title" id="access-gate-title">페이지 잠금</h2>
+      <p class="hint access-gate-lead">비밀번호를 입력한 뒤 확인을 누르세요. 브라우저 탭을 닫았다가 다시 열면 한 번 더 입력합니다.</p>
+      <form id="access-gate-form" class="access-gate-form">
+        <div class="field">
+          <label for="access-gate-password">비밀번호</label>
+          <input type="password" id="access-gate-password" autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">확인</button>
+      </form>
+      <p id="access-gate-error" class="access-gate-error hidden" role="alert"></p>
+    </div>
+  </div>
+
+  <div class="app-shell" id="app-shell">
     <aside class="app-sidebar" aria-label="앱 메뉴">
       <div class="sidebar-brand">
         <span class="sidebar-brand__logo" aria-hidden="true">어</span>
@@ -282,6 +324,32 @@
         <p class="hint sidebar-settings-section-label">대시보드</p>
         <button type="button" class="btn btn-primary" id="dashboard-manual-refresh">저장소에서 다시 불러오기</button>
         <p class="hint hint-spacing-top">STL 목록·계산 기록·도구 링크 수를 Worker 기준으로 갱신합니다.</p>
+        <div class="sidebar-settings-divider"></div>
+        <p class="hint sidebar-settings-section-label">페이지 잠금</p>
+        <p class="hint hint-tight-top">
+          <strong>Cloudflare Worker</strong> 대시보드 → Variables and Secrets에 <code>ADMIN_PASSWORD</code>를 넣으면, 그 값과 동일한 비밀번호로 이 페이지에 들어올 때 검증합니다(아래 「브라우저 전용」보다 우선).
+          탭을 닫았다가 다시 열면 한 번 더 묻습니다. Worker 배포가 필요합니다.
+        </p>
+        <p class="hint hint-tight-top">
+          아래 필드는 이 브라우저에만 저장되는 <strong>추가</strong> 잠금입니다. HTTPS(GitHub Pages)에서만 동작합니다.
+        </p>
+        <p class="hint" id="access-password-status" aria-live="polite">현재: 확인 중…</p>
+        <div class="field">
+          <label for="access-password-current">현재 비밀번호</label>
+          <input type="password" id="access-password-current" autocomplete="current-password" placeholder="변경·제거 시 입력" />
+        </div>
+        <div class="field">
+          <label for="access-password-new">새 비밀번호</label>
+          <input type="password" id="access-password-new" autocomplete="new-password" placeholder="처음 설정 시 여기만 입력" />
+        </div>
+        <div class="field">
+          <label for="access-password-new2">새 비밀번호 확인</label>
+          <input type="password" id="access-password-new2" autocomplete="new-password" />
+        </div>
+        <div class="access-gate-settings-actions">
+          <button type="button" class="btn btn-primary" id="access-password-save">저장</button>
+          <button type="button" class="btn" id="access-password-remove">비밀번호 제거</button>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" id="sidebar-settings-apply-order">순서 적용</button>
@@ -417,6 +485,208 @@
     const SHA_HEADER = "X-GitHub-Content-Sha";
 
     const el = (id) => document.getElementById(id);
+
+    const ACCESS_PASSWORD_STORAGE_KEY = "eoulrimstudio-tools.accessPasswordHash";
+    const ACCESS_UNLOCK_SESSION_KEY = "eoulrimstudio-tools.accessUnlocked";
+
+    /** Worker에 ADMIN_PASSWORD가 있으면 true (배포본 기준, 로드 시 갱신) */
+    let serverPasswordRequired = false;
+
+    async function fetchWorkerAuthStatus() {
+      try {
+        const res = await fetch(`${WORKER_URL}/auth/status`, { method: "GET" });
+        if (!res.ok) return false;
+        const data = await res.json();
+        return !!data.passwordRequired;
+      } catch {
+        return false;
+      }
+    }
+
+    async function verifyWorkerPassword(password) {
+      const res = await fetch(`${WORKER_URL}/auth/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
+      return !!data.ok;
+    }
+
+    function updateAccessGateLeadCopy() {
+      const lead = el("access-gate-lead");
+      if (!lead) return;
+      if (serverPasswordRequired) {
+        lead.textContent =
+          "Cloudflare Worker에 설정한 ADMIN_PASSWORD와 동일하게 입력하세요. 탭을 닫았다가 다시 열면 한 번 더 묻습니다.";
+      } else {
+        lead.textContent =
+          "비밀번호를 입력한 뒤 확인을 누르세요. 브라우저 탭을 닫았다가 다시 열면 한 번 더 입력합니다.";
+      }
+    }
+
+    async function applyWorkerAuthGateOnLoad() {
+      serverPasswordRequired = await fetchWorkerAuthStatus();
+      updateAccessGateLeadCopy();
+      const unlocked = sessionStorage.getItem(ACCESS_UNLOCK_SESSION_KEY) === "1";
+      if (serverPasswordRequired && !unlocked) {
+        document.documentElement.classList.add("access-gate-active");
+        const shell = el("app-shell");
+        if (shell) shell.setAttribute("aria-hidden", "true");
+        const input = el("access-gate-password");
+        if (input) queueMicrotask(() => input.focus());
+      }
+    }
+
+    function bufferToHex(buf) {
+      const u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+      return [...u8].map((b) => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function randomAccessSaltHex() {
+      const a = new Uint8Array(16);
+      crypto.getRandomValues(a);
+      return bufferToHex(a);
+    }
+
+    async function hashAccessPassword(password, saltHex) {
+      const enc = new TextEncoder();
+      const data = enc.encode(`${saltHex}\0${password}`);
+      const digest = await crypto.subtle.digest("SHA-256", data);
+      return bufferToHex(new Uint8Array(digest));
+    }
+
+    function isAccessPasswordConfigured() {
+      try {
+        const raw = localStorage.getItem(ACCESS_PASSWORD_STORAGE_KEY);
+        if (!raw) return false;
+        const p = JSON.parse(raw);
+        return !!(p && p.salt && p.hash);
+      } catch {
+        return false;
+      }
+    }
+
+    async function verifyAccessPassword(password) {
+      const raw = localStorage.getItem(ACCESS_PASSWORD_STORAGE_KEY);
+      if (!raw) return true;
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        return false;
+      }
+      if (!parsed || !parsed.salt || !parsed.hash) return false;
+      const h = await hashAccessPassword(password, parsed.salt);
+      return h === parsed.hash;
+    }
+
+    async function persistAccessPassword(password) {
+      const salt = randomAccessSaltHex();
+      const hash = await hashAccessPassword(password, salt);
+      localStorage.setItem(ACCESS_PASSWORD_STORAGE_KEY, JSON.stringify({ salt, hash }));
+    }
+
+    function clearAccessPasswordStorage() {
+      localStorage.removeItem(ACCESS_PASSWORD_STORAGE_KEY);
+    }
+
+    function unlockAccessGateSession() {
+      sessionStorage.setItem(ACCESS_UNLOCK_SESSION_KEY, "1");
+      document.documentElement.classList.remove("access-gate-active");
+      const shell = el("app-shell");
+      if (shell) shell.removeAttribute("aria-hidden");
+      const inp = el("access-gate-password");
+      const err = el("access-gate-error");
+      if (inp) inp.value = "";
+      if (err) {
+        err.textContent = "";
+        err.classList.add("hidden");
+      }
+    }
+
+    function syncAccessPasswordSettingsStatus() {
+      const status = el("access-password-status");
+      if (!status) return;
+      const workerLine = serverPasswordRequired
+        ? "Worker: ADMIN_PASSWORD로 잠금이 켜져 있습니다."
+        : "Worker: ADMIN_PASSWORD가 비어 있거나 /auth/status를 확인하지 못했습니다.";
+      const localLine = isAccessPasswordConfigured()
+        ? "브라우저: 저장된 추가 비밀번호가 있습니다."
+        : "브라우저: 추가 비밀번호 없음.";
+      status.textContent = `${workerLine} ${localLine}`;
+    }
+
+    function clearAccessPasswordSettingFields() {
+      ["access-password-current", "access-password-new", "access-password-new2"].forEach((id) => {
+        const node = el(id);
+        if (node) node.value = "";
+      });
+    }
+
+    function initAccessGate() {
+      const form = el("access-gate-form");
+      const input = el("access-gate-password");
+      const errEl = el("access-gate-error");
+      if (!form || !input) return;
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (errEl) {
+          errEl.textContent = "";
+          errEl.classList.add("hidden");
+        }
+
+        if (serverPasswordRequired) {
+          try {
+            const ok = await verifyWorkerPassword(input.value);
+            if (ok) {
+              unlockAccessGateSession();
+            } else if (errEl) {
+              errEl.textContent = "비밀번호가 올바르지 않습니다.";
+              errEl.classList.remove("hidden");
+              input.select();
+            }
+          } catch {
+            if (errEl) {
+              errEl.textContent = "Worker에 연결할 수 없습니다. 네트워크와 배포를 확인하세요.";
+              errEl.classList.remove("hidden");
+            }
+          }
+          return;
+        }
+
+        if (isAccessPasswordConfigured()) {
+          try {
+            const ok = await verifyAccessPassword(input.value);
+            if (ok) {
+              unlockAccessGateSession();
+            } else if (errEl) {
+              errEl.textContent = "비밀번호가 올바르지 않습니다.";
+              errEl.classList.remove("hidden");
+              input.select();
+            }
+          } catch {
+            if (errEl) {
+              errEl.textContent = "이 주소(file:// 등)에서는 보안 API를 쓸 수 없습니다. GitHub Pages처럼 HTTPS로 열어 주세요.";
+              errEl.classList.remove("hidden");
+            }
+          }
+          return;
+        }
+
+        unlockAccessGateSession();
+      });
+
+      if (document.documentElement.classList.contains("access-gate-active")) {
+        queueMicrotask(() => input.focus());
+      }
+    }
 
     /** 첫 번째 최상위 `{ ... }` 블록만 잘라 파싱 (앞뒤 잡문자·중복 텍스트 대응) */
     function extractBalancedJsonObject(s) {
@@ -689,7 +959,10 @@
       }
     }
 
-    function openSidebarSettingsModal() {
+    async function openSidebarSettingsModal() {
+      serverPasswordRequired = await fetchWorkerAuthStatus();
+      syncAccessPasswordSettingsStatus();
+      clearAccessPasswordSettingFields();
       destroySidebarSettingsSortable();
       const ul = el("sidebar-order-list");
       ul.innerHTML = "";
@@ -709,7 +982,7 @@
     }
 
     function initSidebarSettingsUi() {
-      el("sidebar-settings-open").addEventListener("click", () => openSidebarSettingsModal());
+      el("sidebar-settings-open").addEventListener("click", () => void openSidebarSettingsModal());
       el("sidebar-settings-close").addEventListener("click", () => {
         destroySidebarSettingsSortable();
         closeModal(el("modal-sidebar-settings"));
@@ -733,6 +1006,79 @@
         if (!dashboardNeedsFetch) {
           toast("대시보드를 불러왔습니다.", "success");
         }
+      });
+
+      el("access-password-save").addEventListener("click", async () => {
+        const cur = (el("access-password-current").value || "").trim();
+        const nw = el("access-password-new").value || "";
+        const nw2 = el("access-password-new2").value || "";
+        const configured = isAccessPasswordConfigured();
+
+        if (configured) {
+          if (!cur) {
+            toast("변경하려면 현재 비밀번호를 입력하세요.", "error");
+            return;
+          }
+          let curOk = false;
+          try {
+            curOk = await verifyAccessPassword(cur);
+          } catch {
+            toast("이 환경에서는 확인할 수 없습니다. HTTPS 또는 localhost에서 시도하세요.", "error");
+            return;
+          }
+          if (!curOk) {
+            toast("현재 비밀번호가 올바르지 않습니다.", "error");
+            return;
+          }
+        }
+
+        if (!nw) {
+          toast("새 비밀번호를 입력하세요.", "error");
+          return;
+        }
+        if (nw !== nw2) {
+          toast("새 비밀번호 확인이 일치하지 않습니다.", "error");
+          return;
+        }
+
+        try {
+          await persistAccessPassword(nw);
+        } catch {
+          toast("비밀번호를 저장할 수 없습니다. HTTPS 또는 localhost에서만 동작합니다.", "error");
+          return;
+        }
+        unlockAccessGateSession();
+        syncAccessPasswordSettingsStatus();
+        clearAccessPasswordSettingFields();
+        toast("페이지 잠금 비밀번호를 저장했습니다.", "success");
+      });
+
+      el("access-password-remove").addEventListener("click", async () => {
+        if (!isAccessPasswordConfigured()) {
+          toast("설정된 비밀번호가 없습니다.", "error");
+          return;
+        }
+        const cur = (el("access-password-current").value || "").trim();
+        if (!cur) {
+          toast("제거하려면 현재 비밀번호를 입력하세요.", "error");
+          return;
+        }
+        let matches = false;
+        try {
+          matches = await verifyAccessPassword(cur);
+        } catch {
+          toast("이 환경에서는 확인할 수 없습니다. HTTPS 또는 localhost에서 시도하세요.", "error");
+          return;
+        }
+        if (!matches) {
+          toast("현재 비밀번호가 올바르지 않습니다.", "error");
+          return;
+        }
+        clearAccessPasswordStorage();
+        sessionStorage.removeItem(ACCESS_UNLOCK_SESSION_KEY);
+        syncAccessPasswordSettingsStatus();
+        clearAccessPasswordSettingFields();
+        toast("페이지 잠금을 해제했습니다.", "success");
       });
     }
 
@@ -1971,6 +2317,9 @@
     });
 
     window.addEventListener("DOMContentLoaded", async () => {
+      await applyWorkerAuthGateOnLoad();
+      initAccessGate();
+      syncAccessPasswordSettingsStatus();
       initMobileSidebarNavRail();
       applySidebarOrder();
       initSidebarSettingsUi();

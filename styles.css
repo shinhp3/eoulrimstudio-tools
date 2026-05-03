@@ -1260,6 +1260,70 @@ body.edit-mode .card-checkbox-wrap {
   border-radius: 4px;
 }
 
+/* 전역 페이지 잠금 (설정에서 비밀번호를 둔 경우, 탭 단위 해제) */
+.access-gate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+}
+
+html.access-gate-active .access-gate-overlay {
+  display: flex;
+}
+
+html.access-gate-active .app-shell {
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.access-gate-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.access-gate-title {
+  margin: 0 0 8px;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.access-gate-lead {
+  margin: 0 0 16px;
+}
+
+.access-gate-form .field {
+  margin-bottom: 14px;
+}
+
+.access-gate-error {
+  margin: 12px 0 0;
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
+.access-gate-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn.btn-block {
+  width: 100%;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
