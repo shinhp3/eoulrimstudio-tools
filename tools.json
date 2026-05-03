@@ -13,8 +13,8 @@
       "name": "작업 기록",
       "icon": "📋",
       "url": "https://shinhp3.github.io/eoulrimstudio-records/",
-      "pinned": false,
-      "order": 0
+      "pinned": true,
+      "order": 1
     }
   ]
 }
