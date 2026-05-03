@@ -5,7 +5,7 @@
       "name": "업로드 관리",
       "icon": "📤",
       "url": "https://eoulrimstudio-upload.eoulrimstudio.workers.dev/admin",
-      "pinned": false,
+      "pinned": true,
       "order": 0
     },
     {
@@ -14,7 +14,7 @@
       "icon": "📋",
       "url": "https://shinhp3.github.io/eoulrimstudio-records/",
       "pinned": false,
-      "order": 1
+      "order": 0
     }
   ]
 }
