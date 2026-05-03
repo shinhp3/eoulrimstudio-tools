@@ -1,3 +1,12 @@
 {
-  "items": []
+  "items": [
+    {
+      "id": "3bef8452-368a-42d1-8616-bdf4c8d57085",
+      "name": "카카오비즈니스",
+      "icon": "📊",
+      "url": "https://business.kakao.com/",
+      "pinned": false,
+      "order": 0
+    }
+  ]
 }
