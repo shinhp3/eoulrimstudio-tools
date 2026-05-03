@@ -165,8 +165,6 @@
     const WORKER_URL = "https://eoulrimstudio-upload.eoulrimstudio.workers.dev";
     const SHA_HEADER = "X-GitHub-Content-Sha";
 
-    const FETCH_CREDENTIALS = { credentials: "include" };
-
     const el = (id) => document.getElementById(id);
 
     let loadingCount = 0;
@@ -230,9 +228,9 @@
       showLoading(true);
       try {
         const [listRes, recordsRes, toolsRes] = await Promise.all([
-          fetch(`${WORKER_URL}/list`, { method: "GET", ...FETCH_CREDENTIALS }),
-          fetch(`${WORKER_URL}/records`, { method: "GET", ...FETCH_CREDENTIALS }),
-          fetch(`${WORKER_URL}/tools`, { method: "GET", ...FETCH_CREDENTIALS }),
+          fetch(`${WORKER_URL}/list`, { method: "GET" }),
+          fetch(`${WORKER_URL}/records`, { method: "GET" }),
+          fetch(`${WORKER_URL}/tools`, { method: "GET" }),
         ]);
 
         let stlCount = "—";
@@ -326,7 +324,6 @@
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ filename: fn }),
-                ...FETCH_CREDENTIALS,
               });
               let data = {};
               try {
@@ -459,7 +456,7 @@
     });
 
     async function fetchRecordsFresh() {
-      const recordsRes = await fetch(`${WORKER_URL}/records`, { method: "GET", ...FETCH_CREDENTIALS });
+      const recordsRes = await fetch(`${WORKER_URL}/records`, { method: "GET" });
       if (!recordsRes.ok) throw new Error(`계산 기록 불러오기 실패 (${recordsRes.status})`);
       const rj = await recordsRes.json();
       dashboardRecords = Array.isArray(rj.records) ? rj.records.slice() : [];
@@ -475,7 +472,6 @@
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
-          ...FETCH_CREDENTIALS,
         });
         let data = {};
         try {
@@ -529,7 +525,7 @@
       await saveRecordsPayload(next);
     });
 
-    /* ---------- 링크 허브 (기존 로직 유지, fetch에 credentials만 추가) ---------- */
+    /* ---------- 링크 허브 ---------- */
 
     const EMOJI_OPTIONS = ["🔗", "📁", "📋", "📊", "📦", "🛠️", "📤", "📝", "🗂️", "🖼️", "📌", "🔧"];
 
@@ -563,14 +559,14 @@
     let selectedEmoji = "🔗";
 
     async function refreshShaFromServer() {
-      const res = await fetch(`${WORKER_URL}/tools`, { method: "GET", ...FETCH_CREDENTIALS });
+      const res = await fetch(`${WORKER_URL}/tools`, { method: "GET" });
       if (!res.ok) return;
       currentSha = res.headers.get(SHA_HEADER) || "";
     }
 
     async function loadLinksFromStorage() {
       try {
-        const res = await fetch(`${WORKER_URL}/tools`, { method: "GET", ...FETCH_CREDENTIALS });
+        const res = await fetch(`${WORKER_URL}/tools`, { method: "GET" });
         if (!res.ok) {
           throw new Error(`불러오기 실패 (${res.status})`);
         }
@@ -602,7 +598,6 @@
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
-          ...FETCH_CREDENTIALS,
         });
 
         let data = {};
