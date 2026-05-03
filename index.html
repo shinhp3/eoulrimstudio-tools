@@ -3,563 +3,127 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>어울림 링크허브</title>
+  <title>어울림 스튜디오</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-  <style>
-    :root {
-      --bg: #f0f2f5;
-      --surface: #ffffff;
-      --surface-hover: #f4f6f9;
-      --border: #e2e6ed;
-      --text: #1c2230;
-      --text-muted: #5c667a;
-      --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --danger: #dc2626;
-      --success: #16a34a;
-      --radius: 12px;
-      --shadow: 0 4px 22px rgba(28, 34, 48, 0.08);
-      --fab-size: 56px;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: "Noto Sans KR", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      line-height: 1.5;
-      padding-bottom: calc(var(--fab-size) + 48px);
-    }
-
-    .app-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-      box-shadow: 0 1px 0 rgba(28, 34, 48, 0.04);
-      position: sticky;
-      top: 0;
-      z-index: 50;
-    }
-
-    .app-title {
-      font-size: 1.15rem;
-      font-weight: 700;
-      flex: 1;
-      min-width: 140px;
-    }
-
-    .header-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .btn {
-      font-family: inherit;
-      font-size: 0.875rem;
-      font-weight: 500;
-      padding: 8px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
-    }
-
-    .btn:hover:not(:disabled) {
-      background: var(--surface-hover);
-      border-color: var(--text-muted);
-    }
-
-    .btn:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #ffffff;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background: var(--accent-hover);
-      border-color: var(--accent-hover);
-    }
-
-    .btn-danger {
-      background: transparent;
-      border-color: var(--danger);
-      color: var(--danger);
-    }
-
-    .btn-danger:hover:not(:disabled) {
-      background: rgba(220, 38, 38, 0.08);
-    }
-
-    main {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-
-    .section-title {
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-muted);
-      margin-bottom: 10px;
-      margin-top: 24px;
-    }
-
-    .section-title:first-child {
-      margin-top: 0;
-    }
-
-    .sortable-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-height: 8px;
-    }
-
-    .card {
-      display: flex;
-      align-items: stretch;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.15s;
-    }
-
-    .card.sortable-drag,
-    .card.sortable-chosen {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow);
-      border-color: var(--accent);
-      z-index: 10;
-    }
-
-    .sortable-ghost {
-      opacity: 0.35;
-    }
-
-    .card-main {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 16px;
-      cursor: pointer;
-      text-align: left;
-      border: none;
-      background: transparent;
-      color: inherit;
-      font: inherit;
-      min-width: 0;
-    }
-
-    .card-main:hover {
-      background: rgba(0, 0, 0, 0.03);
-    }
-
-    .card-checkbox-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding-left: 12px;
-      flex-shrink: 0;
-      width: 0;
-      opacity: 0;
-      overflow: hidden;
-      transition: width 0.28s ease, opacity 0.22s ease;
-    }
-
-    body.edit-mode .card-checkbox-wrap {
-      width: 44px;
-      opacity: 1;
-    }
-
-    .circle-check {
-      appearance: none;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      border: 2px solid var(--text-muted);
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: border-color 0.15s, background 0.15s;
-    }
-
-    .circle-check:checked {
-      border-color: var(--accent);
-      background: var(--accent);
-      box-shadow: inset 0 0 0 3px #ffffff;
-    }
-
-    .card-icon {
-      font-size: 1.75rem;
-      line-height: 1;
-      flex-shrink: 0;
-    }
-
-    .card-body {
-      min-width: 0;
-      flex: 1;
-    }
-
-    .card-name {
-      font-weight: 600;
-      font-size: 1rem;
-      margin-bottom: 2px;
-      word-break: break-word;
-    }
-
-    .card-pin {
-      flex-shrink: 0;
-      padding: 8px 12px;
-      border: none;
-      border-left: 1px solid var(--border);
-      background: transparent;
-      cursor: pointer;
-      font-size: 1.25rem;
-      line-height: 1;
-      transition: background 0.15s;
-    }
-
-    .card-pin:hover {
-      background: rgba(0, 0, 0, 0.04);
-    }
-
-    .card-pin.pinned-active {
-      filter: none;
-      opacity: 1;
-    }
-
-    .card-pin:not(.pinned-active) {
-      opacity: 0.45;
-    }
-
-    .fab-add {
-      position: fixed;
-      right: 20px;
-      bottom: 20px;
-      width: auto;
-      min-width: var(--fab-size);
-      height: var(--fab-size);
-      padding: 0 18px;
-      border-radius: 999px;
-      border: none;
-      background: var(--accent);
-      color: #ffffff;
-      font-size: 1.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: var(--shadow);
-      z-index: 40;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.15s, background 0.15s;
-    }
-
-    .fab-add:hover {
-      transform: scale(1.06);
-      background: var(--accent-hover);
-    }
-
-    .fab-add .fab-inner {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      padding: 0 4px;
-    }
-
-    .fab-add .fab-inner .fab-plus {
-      font-size: 1.35rem;
-      line-height: 1;
-      margin-top: -1px;
-    }
-
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(28, 34, 48, 0.45);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 200;
-      padding: 16px;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.2s, visibility 0.2s;
-    }
-
-    .modal-overlay.open {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    .modal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      width: 100%;
-      max-width: 420px;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: var(--shadow);
-      transform: translateY(12px);
-      transition: transform 0.2s;
-    }
-
-    .modal-overlay.open .modal {
-      transform: translateY(0);
-    }
-
-    .modal-header {
-      padding: 18px 20px;
-      border-bottom: 1px solid var(--border);
-      font-weight: 700;
-      font-size: 1.05rem;
-    }
-
-    .modal-body {
-      padding: 18px 20px;
-    }
-
-    .modal-footer {
-      padding: 14px 20px 18px;
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-    }
-
-    .field {
-      margin-bottom: 16px;
-    }
-
-    .field label {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
-
-    .field input[type="text"],
-    .field input[type="password"],
-    .field input[type="url"] {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-      font: inherit;
-    }
-
-    .field input:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-
-    .hint {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .emoji-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 8px;
-    }
-
-    .emoji-btn {
-      aspect-ratio: 1;
-      border: 2px solid var(--border);
-      border-radius: 8px;
-      background: var(--bg);
-      font-size: 1.35rem;
-      cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
-    }
-
-    .emoji-btn:hover {
-      border-color: var(--text-muted);
-    }
-
-    .emoji-btn.selected {
-      border-color: var(--accent);
-      background: rgba(37, 99, 235, 0.1);
-    }
-
-    .toast-container {
-      position: fixed;
-      bottom: 96px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 300;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: center;
-      pointer-events: none;
-      width: calc(100% - 32px);
-      max-width: 400px;
-    }
-
-    .toast {
-      pointer-events: none;
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      box-shadow: var(--shadow);
-      animation: toastIn 0.28s ease;
-    }
-
-    .toast.error {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #991b1b;
-    }
-
-    .toast.success {
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      color: #166534;
-    }
-
-    @keyframes toastIn {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .confirm-dialog .modal-body {
-      font-size: 0.95rem;
-      color: var(--text-muted);
-    }
-
-    .empty-hint {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      padding: 12px;
-      text-align: center;
-      border: 1px dashed var(--border);
-      border-radius: var(--radius);
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    @media (max-width: 560px) {
-      .app-header {
-        padding: 12px 14px;
-      }
-
-      .app-title {
-        font-size: 1rem;
-        width: 100%;
-      }
-
-      main {
-        padding: 14px;
-      }
-
-      .fab-add {
-        right: 14px;
-        bottom: 14px;
-        width: 52px;
-        min-width: 52px;
-        height: 52px;
-        padding: 0;
-      }
-
-      .fab-add .fab-inner .fab-label {
-        display: none;
-      }
-
-      .fab-add .fab-inner {
-        font-size: 1.6rem;
-      }
-
-      .fab-add .fab-inner .fab-plus {
-        font-size: inherit;
-        margin-top: 0;
-      }
-
-      .emoji-grid {
-        grid-template-columns: repeat(4, 1fr);
-      }
-
-      .card-main {
-        padding: 12px;
-      }
-
-      .card-icon {
-        font-size: 1.5rem;
-      }
-    }
-  </style>
 </head>
 <body>
   <header class="app-header">
-    <h1 class="app-title">어울림 링크허브</h1>
-    <div class="header-actions">
-      <button type="button" class="btn" id="btn-edit-toggle">편집</button>
-      <button type="button" class="btn btn-primary hidden" id="btn-edit-done">편집 완료</button>
-      <button type="button" class="btn" id="btn-batch-edit" disabled>수정</button>
-      <button type="button" class="btn btn-danger" id="btn-batch-delete" disabled>삭제</button>
-    </div>
+    <h1 class="app-title">어울림 스튜디오</h1>
+    <nav class="tabs" aria-label="섹션">
+      <button type="button" class="tab-btn active" id="tab-dashboard" data-tab="dashboard">대시보드</button>
+      <button type="button" class="tab-btn" id="tab-links" data-tab="links">링크 허브</button>
+    </nav>
   </header>
 
-  <main>
-    <h2 class="section-title">고정됨</h2>
-    <div id="pinned-list" class="sortable-list" aria-label="고정된 링크"></div>
-    <div id="pinned-empty" class="empty-hint hidden">고정된 링크가 없습니다.</div>
+  <!-- 탭: 대시보드 -->
+  <section id="panel-dashboard" class="tab-panel" aria-label="대시보드">
+    <div class="dashboard-main">
+      <div id="dashboard-errors"></div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-stl">—</div>
+          <div class="stat-label">STL 모델</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-records">—</div>
+          <div class="stat-label">계산 기록</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-tools">—</div>
+          <div class="stat-label">도구 링크</div>
+        </div>
+      </div>
 
-    <h2 class="section-title">일반</h2>
-    <div id="normal-list" class="sortable-list" aria-label="일반 링크"></div>
-    <div id="normal-empty" class="empty-hint hidden">등록된 링크가 없습니다.</div>
-  </main>
+      <h2 class="section-title">STL 모델</h2>
+      <div id="stl-list"></div>
+      <div id="stl-empty" class="empty-hint hidden">등록된 STL이 없습니다.</div>
 
-  <button type="button" class="fab-add" id="fab-add" aria-label="링크 추가">
-    <span class="fab-inner"><span class="fab-plus" aria-hidden="true">+</span><span class="fab-label">추가</span></span>
-  </button>
+      <h2 class="section-title">계산 기록</h2>
+      <input type="search" class="records-search" id="records-search" placeholder="이름·메모 검색" autocomplete="off" />
+      <div id="records-list"></div>
+      <div id="records-empty" class="empty-hint hidden">표시할 기록이 없습니다.</div>
+    </div>
+  </section>
+
+  <!-- 탭: 링크 허브 -->
+  <section id="panel-links" class="tab-panel hidden" aria-label="링크 허브">
+    <div class="links-subheader">
+      <div class="header-actions">
+        <button type="button" class="btn" id="btn-edit-toggle">편집</button>
+        <button type="button" class="btn btn-primary hidden" id="btn-edit-done">편집 완료</button>
+        <button type="button" class="btn" id="btn-batch-edit" disabled>수정</button>
+        <button type="button" class="btn btn-danger" id="btn-batch-delete" disabled>삭제</button>
+      </div>
+    </div>
+
+    <main>
+      <h2 class="section-title">고정됨</h2>
+      <div id="pinned-list" class="sortable-list" aria-label="고정된 링크"></div>
+      <div id="pinned-empty" class="empty-hint hidden">고정된 링크가 없습니다.</div>
+
+      <h2 class="section-title">일반</h2>
+      <div id="normal-list" class="sortable-list" aria-label="일반 링크"></div>
+      <div id="normal-empty" class="empty-hint hidden">등록된 링크가 없습니다.</div>
+    </main>
+
+    <button type="button" class="fab-add" id="fab-add" aria-label="링크 추가">
+      <span class="fab-inner"><span class="fab-plus" aria-hidden="true">+</span><span class="fab-label">추가</span></span>
+    </button>
+  </section>
 
   <div class="toast-container" id="toast-container"></div>
 
-  <!-- 추가/수정 모달 -->
+  <div class="loading-overlay" id="loading-overlay" aria-hidden="true">
+    <div class="spinner" role="status" aria-label="로딩 중"></div>
+  </div>
+
+  <!-- 대시보드: 계산 기록 수정 -->
+  <div class="modal-overlay" id="modal-record-edit" role="dialog" aria-modal="true" aria-labelledby="record-edit-title">
+    <div class="modal modal-wide">
+      <div class="modal-header" id="record-edit-title">계산 기록 수정</div>
+      <div class="modal-body">
+        <input type="hidden" id="record-edit-id" />
+        <div class="field">
+          <label for="record-edit-name">이름</label>
+          <input type="text" id="record-edit-name" maxlength="200" />
+        </div>
+        <div class="field">
+          <label for="record-edit-plaster">석고량</label>
+          <input type="text" id="record-edit-plaster" maxlength="120" />
+        </div>
+        <div class="field">
+          <label for="record-edit-water">물량</label>
+          <input type="text" id="record-edit-water" maxlength="120" />
+        </div>
+        <div class="field">
+          <label for="record-edit-memo">메모</label>
+          <textarea id="record-edit-memo" maxlength="2000"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" id="record-edit-cancel">취소</button>
+        <button type="button" class="btn btn-primary" id="record-edit-save">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 대시보드: 확인 -->
+  <div class="modal-overlay confirm-dialog" id="modal-dashboard-confirm" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modal-header">확인</div>
+      <div class="modal-body" id="dashboard-confirm-message"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn" id="dashboard-confirm-cancel">취소</button>
+        <button type="button" class="btn btn-danger" id="dashboard-confirm-ok">삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 추가/수정 모달 (링크 허브) -->
   <div class="modal-overlay" id="modal-link" role="dialog" aria-modal="true" aria-labelledby="link-modal-title">
     <div class="modal">
       <div class="modal-header" id="link-modal-title">링크 추가</div>
@@ -585,7 +149,7 @@
     </div>
   </div>
 
-  <!-- 삭제 확인 -->
+  <!-- 삭제 확인 (링크 허브) -->
   <div class="modal-overlay confirm-dialog" id="modal-delete" role="dialog" aria-modal="true">
     <div class="modal">
       <div class="modal-header">삭제 확인</div>
@@ -600,6 +164,372 @@
   <script>
     const WORKER_URL = "https://eoulrimstudio-upload.eoulrimstudio.workers.dev";
     const SHA_HEADER = "X-GitHub-Content-Sha";
+
+    const FETCH_CREDENTIALS = { credentials: "include" };
+
+    const el = (id) => document.getElementById(id);
+
+    let loadingCount = 0;
+    function showLoading(show) {
+      if (show) loadingCount++;
+      else loadingCount = Math.max(0, loadingCount - 1);
+      el("loading-overlay").classList.toggle("visible", loadingCount > 0);
+    }
+
+    function toast(message, type = "error") {
+      const wrap = el("toast-container");
+      const t = document.createElement("div");
+      t.className = `toast ${type}`;
+      t.textContent = message;
+      wrap.appendChild(t);
+      setTimeout(() => {
+        t.remove();
+      }, 3200);
+    }
+
+    /* ---------- 탭 ---------- */
+    function setTab(name) {
+      el("tab-dashboard").classList.toggle("active", name === "dashboard");
+      el("tab-links").classList.toggle("active", name === "links");
+      el("panel-dashboard").classList.toggle("hidden", name !== "dashboard");
+      el("panel-links").classList.toggle("hidden", name !== "links");
+      document.body.classList.toggle("tab-links-active", name === "links");
+      if (name === "dashboard") {
+        refreshDashboard();
+      }
+    }
+
+    el("tab-dashboard").addEventListener("click", () => setTab("dashboard"));
+    el("tab-links").addEventListener("click", () => setTab("links"));
+
+    /* ---------- 대시보드 ---------- */
+    let dashboardFiles = [];
+    let dashboardRecords = [];
+    let recordsSha = "";
+    let dashboardConfirmCallback = null;
+    const THUMB_PLACEHOLDER =
+      "data:image/svg+xml," +
+      encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="88" height="88"><rect fill="#e2e6ed" width="88" height="88"/><text x="44" y="48" text-anchor="middle" fill="#5c667a" font-size="11" font-family="sans-serif">no img</text></svg>'
+      );
+
+    function dashboardPushError(msg) {
+      const box = el("dashboard-errors");
+      const line = document.createElement("div");
+      line.className = "dashboard-error";
+      line.textContent = msg;
+      box.appendChild(line);
+    }
+
+    function clearDashboardErrors() {
+      el("dashboard-errors").innerHTML = "";
+    }
+
+    async function refreshDashboard() {
+      clearDashboardErrors();
+      showLoading(true);
+      try {
+        const [listRes, recordsRes, toolsRes] = await Promise.all([
+          fetch(`${WORKER_URL}/list`, { method: "GET", ...FETCH_CREDENTIALS }),
+          fetch(`${WORKER_URL}/records`, { method: "GET", ...FETCH_CREDENTIALS }),
+          fetch(`${WORKER_URL}/tools`, { method: "GET", ...FETCH_CREDENTIALS }),
+        ]);
+
+        let stlCount = "—";
+        if (listRes.ok) {
+          const lj = await listRes.json();
+          dashboardFiles = Array.isArray(lj.files) ? lj.files : [];
+          stlCount = String(dashboardFiles.length);
+        } else {
+          dashboardPushError(`STL 목록: ${listRes.status} ${listRes.statusText || ""}`.trim());
+          dashboardFiles = [];
+        }
+        el("stat-stl").textContent = stlCount;
+
+        let recCount = "—";
+        if (recordsRes.ok) {
+          const rj = await recordsRes.json();
+          dashboardRecords = Array.isArray(rj.records) ? rj.records.slice() : [];
+          recordsSha = recordsRes.headers.get(SHA_HEADER) || "";
+          recCount = String(dashboardRecords.length);
+        } else {
+          dashboardPushError(`계산 기록: ${recordsRes.status} ${recordsRes.statusText || ""}`.trim());
+          dashboardRecords = [];
+          recordsSha = "";
+        }
+        el("stat-records").textContent = recCount;
+
+        let toolsCount = "—";
+        if (toolsRes.ok) {
+          const tj = await toolsRes.json();
+          toolsCount = String(Array.isArray(tj.items) ? tj.items.length : 0);
+        } else {
+          dashboardPushError(`도구 링크: ${toolsRes.status} ${toolsRes.statusText || ""}`.trim());
+        }
+        el("stat-tools").textContent = toolsCount;
+
+        renderStlList();
+        renderRecordsFiltered();
+      } catch (e) {
+        toast(String(e.message || e));
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function renderStlList() {
+      const root = el("stl-list");
+      root.innerHTML = "";
+      el("stl-empty").classList.toggle("hidden", dashboardFiles.length > 0);
+      dashboardFiles.forEach((f) => {
+        const fn = f.filename || "";
+        const url = f.url || "";
+        const row = document.createElement("div");
+        row.className = "stl-row";
+        const nameEl = document.createElement("div");
+        nameEl.className = "stl-name";
+        nameEl.textContent = fn;
+        const actions = document.createElement("div");
+        actions.className = "stl-actions";
+
+        const btnCopy = document.createElement("button");
+        btnCopy.type = "button";
+        btnCopy.className = "btn btn-sm";
+        btnCopy.textContent = "URL 복사";
+        btnCopy.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(url);
+            toast("URL을 복사했습니다.", "success");
+          } catch {
+            toast("복사에 실패했습니다.");
+          }
+        });
+
+        const btnOpen = document.createElement("button");
+        btnOpen.type = "button";
+        btnOpen.className = "btn btn-sm btn-primary";
+        btnOpen.textContent = "열기";
+        btnOpen.addEventListener("click", () => {
+          window.open(url, "_blank", "noopener,noreferrer");
+        });
+
+        const btnDel = document.createElement("button");
+        btnDel.type = "button";
+        btnDel.className = "btn btn-sm btn-danger";
+        btnDel.textContent = "삭제";
+        btnDel.addEventListener("click", () => {
+          openDashboardConfirm(`STL 파일 «${fn}»을(를) 삭제할까요? 이 작업은 되돌릴 수 없습니다.`, async () => {
+            closeModal(el("modal-dashboard-confirm"));
+            showLoading(true);
+            try {
+              const res = await fetch(`${WORKER_URL}/delete`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ filename: fn }),
+                ...FETCH_CREDENTIALS,
+              });
+              let data = {};
+              try {
+                data = await res.json();
+              } catch {
+                /* ignore */
+              }
+              if (!res.ok || data.success === false) {
+                toast(data.error || `삭제 실패 (${res.status})`);
+                return;
+              }
+              toast("삭제했습니다.", "success");
+              await refreshDashboard();
+            } catch (err) {
+              toast(String(err.message || err));
+            } finally {
+              showLoading(false);
+            }
+          });
+        });
+
+        actions.append(btnCopy, btnOpen, btnDel);
+        row.append(nameEl, actions);
+        root.appendChild(row);
+      });
+    }
+
+    function getFilteredRecords() {
+      const q = (el("records-search").value || "").trim().toLowerCase();
+      if (!q) return dashboardRecords.slice();
+      return dashboardRecords.filter((r) => {
+        const name = String(r.name ?? "").toLowerCase();
+        const memo = String(r.memo ?? "").toLowerCase();
+        return name.includes(q) || memo.includes(q);
+      });
+    }
+
+    function renderRecordsFiltered() {
+      const root = el("records-list");
+      root.innerHTML = "";
+      const list = getFilteredRecords();
+      el("records-empty").classList.toggle("hidden", list.length > 0);
+      list.forEach((r) => {
+        const card = document.createElement("div");
+        card.className = "record-card";
+
+        const img = document.createElement("img");
+        img.className = "record-thumb";
+        img.alt = "";
+        img.loading = "lazy";
+        img.src = r.thumbnail || THUMB_PLACEHOLDER;
+        img.onerror = () => {
+          img.src = THUMB_PLACEHOLDER;
+        };
+
+        const body = document.createElement("div");
+        body.className = "record-body";
+        const title = document.createElement("div");
+        title.className = "record-name";
+        title.textContent = r.name ?? "";
+        const meta = document.createElement("div");
+        meta.className = "record-meta";
+        meta.textContent = [
+          r.date != null ? String(r.date) : "",
+          r.plaster != null ? `석고 ${r.plaster}` : "",
+          r.water != null ? `물 ${r.water}` : "",
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        const memo = document.createElement("div");
+        memo.className = "record-memo";
+        memo.textContent = r.memo ?? "";
+
+        const actions = document.createElement("div");
+        actions.className = "record-actions";
+
+        const btnEdit = document.createElement("button");
+        btnEdit.type = "button";
+        btnEdit.className = "btn btn-sm";
+        btnEdit.textContent = "수정";
+        btnEdit.addEventListener("click", () => openRecordEditModal(r));
+
+        const btnDel = document.createElement("button");
+        btnDel.type = "button";
+        btnDel.className = "btn btn-sm btn-danger";
+        btnDel.textContent = "삭제";
+        btnDel.addEventListener("click", () => {
+          openDashboardConfirm(
+            `기록 «${String(r.name || "").slice(0, 80)}»을(를) 삭제할까요? 이 작업은 되돌릴 수 없습니다.`,
+            async () => {
+              closeModal(el("modal-dashboard-confirm"));
+              const next = dashboardRecords.filter((x) => x.id !== r.id);
+              await saveRecordsPayload(next);
+            }
+          );
+        });
+
+        actions.append(btnEdit, btnDel);
+        body.append(title, meta, memo, actions);
+        card.append(img, body);
+        root.appendChild(card);
+      });
+    }
+
+    el("records-search").addEventListener("input", () => renderRecordsFiltered());
+
+    function openModal(overlay) {
+      overlay.classList.add("open");
+    }
+
+    function closeModal(overlay) {
+      overlay.classList.remove("open");
+    }
+
+    function openDashboardConfirm(message, onOk) {
+      el("dashboard-confirm-message").textContent = message;
+      dashboardConfirmCallback = onOk;
+      openModal(el("modal-dashboard-confirm"));
+    }
+
+    el("dashboard-confirm-cancel").addEventListener("click", () => {
+      dashboardConfirmCallback = null;
+      closeModal(el("modal-dashboard-confirm"));
+    });
+
+    el("dashboard-confirm-ok").addEventListener("click", async () => {
+      const fn = dashboardConfirmCallback;
+      dashboardConfirmCallback = null;
+      if (typeof fn === "function") await fn();
+    });
+
+    async function fetchRecordsFresh() {
+      const recordsRes = await fetch(`${WORKER_URL}/records`, { method: "GET", ...FETCH_CREDENTIALS });
+      if (!recordsRes.ok) throw new Error(`계산 기록 불러오기 실패 (${recordsRes.status})`);
+      const rj = await recordsRes.json();
+      dashboardRecords = Array.isArray(rj.records) ? rj.records.slice() : [];
+      recordsSha = recordsRes.headers.get(SHA_HEADER) || "";
+    }
+
+    async function saveRecordsPayload(records) {
+      showLoading(true);
+      try {
+        const body = { records };
+        if (recordsSha) body.sha = recordsSha;
+        const res = await fetch(`${WORKER_URL}/records`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          ...FETCH_CREDENTIALS,
+        });
+        let data = {};
+        try {
+          data = await res.json();
+        } catch {
+          /* ignore */
+        }
+        if (!res.ok || data.success === false) {
+          toast(data.error || `저장 실패 (${res.status})`);
+          return;
+        }
+        toast("저장했습니다.", "success");
+        await fetchRecordsFresh();
+        el("stat-records").textContent = String(dashboardRecords.length);
+        renderRecordsFiltered();
+      } catch (e) {
+        toast(String(e.message || e));
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function openRecordEditModal(r) {
+      el("record-edit-id").value = r.id;
+      el("record-edit-name").value = r.name ?? "";
+      el("record-edit-plaster").value = r.plaster ?? "";
+      el("record-edit-water").value = r.water ?? "";
+      el("record-edit-memo").value = r.memo ?? "";
+      openModal(el("modal-record-edit"));
+    }
+
+    el("record-edit-cancel").addEventListener("click", () => closeModal(el("modal-record-edit")));
+
+    el("record-edit-save").addEventListener("click", async () => {
+      const id = el("record-edit-id").value;
+      const name = el("record-edit-name").value.trim();
+      const plaster = el("record-edit-plaster").value.trim();
+      const water = el("record-edit-water").value.trim();
+      const memo = el("record-edit-memo").value.trim();
+      const next = dashboardRecords.map((row) => {
+        if (String(row.id) !== String(id)) return row;
+        return {
+          ...row,
+          name,
+          plaster,
+          water,
+          memo,
+        };
+      });
+      closeModal(el("modal-record-edit"));
+      await saveRecordsPayload(next);
+    });
+
+    /* ---------- 링크 허브 (기존 로직 유지, fetch에 credentials만 추가) ---------- */
 
     const EMOJI_OPTIONS = ["🔗", "📁", "📋", "📊", "📦", "🛠️", "📤", "📝", "🗂️", "🖼️", "📌", "🔧"];
 
@@ -632,28 +562,15 @@
     let editingId = null;
     let selectedEmoji = "🔗";
 
-    const el = (id) => document.getElementById(id);
-
-    function toast(message, type = "error") {
-      const wrap = el("toast-container");
-      const t = document.createElement("div");
-      t.className = `toast ${type}`;
-      t.textContent = message;
-      wrap.appendChild(t);
-      setTimeout(() => {
-        t.remove();
-      }, 3200);
-    }
-
     async function refreshShaFromServer() {
-      const res = await fetch(`${WORKER_URL}/tools`, { method: "GET" });
+      const res = await fetch(`${WORKER_URL}/tools`, { method: "GET", ...FETCH_CREDENTIALS });
       if (!res.ok) return;
       currentSha = res.headers.get(SHA_HEADER) || "";
     }
 
     async function loadLinksFromStorage() {
       try {
-        const res = await fetch(`${WORKER_URL}/tools`, { method: "GET" });
+        const res = await fetch(`${WORKER_URL}/tools`, { method: "GET", ...FETCH_CREDENTIALS });
         if (!res.ok) {
           throw new Error(`불러오기 실패 (${res.status})`);
         }
@@ -685,6 +602,7 @@
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
+          ...FETCH_CREDENTIALS,
         });
 
         let data = {};
@@ -861,14 +779,6 @@
       updateBatchButtons();
     }
 
-    function openModal(overlay) {
-      overlay.classList.add("open");
-    }
-
-    function closeModal(overlay) {
-      overlay.classList.remove("open");
-    }
-
     function ensureHttps(url) {
       const t = url.trim();
       if (!t) return "";
@@ -986,7 +896,6 @@
       updateBatchButtons();
     }
 
-    /* 이벤트 바인딩 */
     el("btn-edit-toggle").addEventListener("click", () => setEditMode(true));
     el("btn-edit-done").addEventListener("click", () => setEditMode(false));
 
@@ -1024,6 +933,7 @@
     });
 
     window.addEventListener("DOMContentLoaded", async () => {
+      await refreshDashboard();
       buildEmojiGrid();
       await loadLinksFromStorage();
       render();
