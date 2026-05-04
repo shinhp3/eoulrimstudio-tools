@@ -102,6 +102,12 @@
               </span>
               어울림 캘린더
             </button>
+            <button type="button" class="sidebar-nav__btn" id="tab-receipt" data-tab="receipt">
+              <span class="sidebar-nav__ico" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
+              </span>
+              견적서
+            </button>
             <button type="button" class="sidebar-nav__btn" id="tab-links" data-tab="links">
               <span class="sidebar-nav__ico" aria-hidden="true">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
@@ -128,7 +134,7 @@
       <header class="main-header">
         <div class="main-header__titles">
           <h1 class="main-header__title" id="page-heading">대시보드</h1>
-          <p class="main-header__subtitle" id="page-subtitle">STL·기록·도구 링크 현황을 한곳에서 확인합니다.</p>
+          <p class="main-header__subtitle" id="page-subtitle">STL·기록·도구 링크·저장 견적 현황을 한곳에서 확인합니다.</p>
         </div>
       </header>
 
@@ -151,10 +157,14 @@
                 <div class="kpi-card__label">도구 링크</div>
                 <div class="kpi-card__value" id="stat-tools">—</div>
               </article>
+              <article class="kpi-card">
+                <div class="kpi-card__label">저장 견적</div>
+                <div class="kpi-card__value" id="stat-quotes">—</div>
+              </article>
             </div>
 
             <div class="dashboard-grid">
-              <details class="dash-panel dash-panel--expandable dash-panel--with-toolbar" open>
+              <details class="dash-panel dash-panel--expandable dash-panel--with-toolbar">
                 <summary class="dash-panel__head dash-panel__head--toolbar">
                   <span class="dash-panel__summary-main dash-panel__summary-main--toolbar">
                     <span class="dash-expand-chevron" aria-hidden="true"></span>
@@ -182,7 +192,7 @@
                 </div>
               </details>
 
-              <details class="dash-panel dash-panel--expandable dash-panel--with-toolbar" open>
+              <details class="dash-panel dash-panel--expandable dash-panel--with-toolbar">
                 <summary class="dash-panel__head dash-panel__head--toolbar">
                   <span class="dash-panel__summary-main dash-panel__summary-main--toolbar">
                     <span class="dash-expand-chevron" aria-hidden="true"></span>
@@ -219,6 +229,37 @@
                       전체 <span id="records-preview-total"></span>건 보기
                     </button>
                   </div>
+                </div>
+              </details>
+
+              <details class="dash-panel dash-panel--expandable dash-panel--with-toolbar dash-panel--full-span">
+                <summary class="dash-panel__head dash-panel__head--toolbar">
+                  <span class="dash-panel__summary-main dash-panel__summary-main--toolbar">
+                    <span class="dash-expand-chevron" aria-hidden="true"></span>
+                    <span class="dash-panel__summary-text dash-panel__summary-text--grow">
+                      <span class="dash-panel__title-cluster">
+                        <span class="dash-panel__title">저장 견적</span>
+                        <button type="button" class="dash-panel-refresh" id="dash-refresh-quotes" aria-label="저장 견적 새로고침" title="Worker에서 다시 불러오기">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 11-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                        </button>
+                      </span>
+                    </span>
+                    <div class="records-toolbar records-toolbar--summary">
+                      <label class="sr-only" for="quotes-sort">정렬</label>
+                      <select id="quotes-sort" class="input-select" aria-label="견적 목록 정렬">
+                        <option value="issue-desc">발행일 최신순</option>
+                        <option value="issue-asc">발행일 오래된순</option>
+                        <option value="saved-desc">저장 최신순</option>
+                        <option value="saved-asc">저장 오래된순</option>
+                      </select>
+                      <input type="search" class="input-search" id="quotes-search" placeholder="저장 이름·발송번호·파일명 검색…" autocomplete="off" />
+                    </div>
+                  </span>
+                </summary>
+                <div class="dash-panel__body dash-panel__body--pad">
+                  <p class="hint quotes-worker-hint hidden" id="quotes-worker-hint"></p>
+                  <div id="quotes-list"></div>
+                  <div id="quotes-empty" class="empty-state hidden">저장된 견적이 없습니다.</div>
                 </div>
               </details>
             </div>
@@ -283,6 +324,27 @@
             <div id="calendar-embed-viewport" class="hub-preview-pane__viewport">
               <div class="hub-preview-pane__frame-slot">
                 <iframe id="calendar-embed-frame" class="hub-preview-pane__frame" title="어울림 캘린더"></iframe>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 탭: 견적서 (GitHub Pages) -->
+        <section id="panel-receipt" class="tab-panel hidden" aria-label="견적서">
+          <div class="tool-embed">
+            <div class="tool-embed__bar hub-preview-pane__bar">
+              <span class="tool-embed__title">견적서</span>
+              <span class="tool-embed__host">shinhp3.github.io/eoulrimstudio-receipt</span>
+              <div class="hub-preview-zoom-wrap hub-preview-zoom-wrap--slider" role="group" aria-label="화면 배율">
+                <span class="hub-preview-zoom-label">배율</span>
+                <input type="range" id="receipt-embed-zoom" class="hub-preview-zoom-range" min="50" max="100" value="85" step="1" aria-valuemin="50" aria-valuemax="100" aria-valuenow="85" aria-valuetext="85%" />
+                <span class="hub-preview-zoom-value" id="receipt-embed-zoom-value">85%</span>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" id="receipt-embed-new-tab">새 탭</button>
+            </div>
+            <div id="receipt-embed-viewport" class="hub-preview-pane__viewport">
+              <div class="hub-preview-pane__frame-slot">
+                <iframe id="receipt-embed-frame" class="hub-preview-pane__frame" title="견적서"></iframe>
               </div>
             </div>
           </div>
@@ -362,7 +424,7 @@
         <div class="sidebar-settings-divider"></div>
         <p class="hint sidebar-settings-section-label">대시보드</p>
         <button type="button" class="btn btn-primary" id="dashboard-manual-refresh">저장소에서 다시 불러오기</button>
-        <p class="hint hint-spacing-top">STL 목록·계산 기록·도구 링크 수를 Worker 기준으로 갱신합니다.</p>
+        <p class="hint hint-spacing-top">STL 목록·계산 기록·도구 링크·저장 견적 수를 Worker 기준으로 갱신합니다.</p>
         <div class="sidebar-settings-divider"></div>
         <p class="hint sidebar-settings-section-label">페이지 잠금</p>
         <p class="hint hint-tight-top">
@@ -833,6 +895,13 @@
     const EMBED_CALC_URL = "https://shinhp3.github.io/eoulrimstudio-records/";
     const EMBED_STL_URL = "https://shinhp3.github.io/eoulrimstudio-models/admin/";
     const EMBED_CALENDAR_URL = "https://shinhp3.github.io/eoulrimstudio-calendar/";
+    const EMBED_RECEIPT_URL = "https://shinhp3.github.io/eoulrimstudio-receipt/";
+
+    /** 견적 앱 작성 탭으로 해당 파일 열기 (?cloud=) */
+    function receiptQuoteEditUrl(fileName) {
+      const base = EMBED_RECEIPT_URL.replace(/\/+$/, "");
+      return `${base}/index.html?cloud=${encodeURIComponent(fileName)}`;
+    }
 
     function ensureCalcEmbedLoaded() {
       const f = el("calc-embed-frame");
@@ -855,19 +924,28 @@
       f.dataset.embedLoaded = "1";
     }
 
+    function ensureReceiptEmbedLoaded() {
+      const f = el("receipt-embed-frame");
+      if (!f || f.dataset.embedLoaded === "1") return;
+      f.src = EMBED_RECEIPT_URL;
+      f.dataset.embedLoaded = "1";
+    }
+
     async function setTab(name) {
       el("tab-dashboard").classList.toggle("active", name === "dashboard");
       el("tab-calc").classList.toggle("active", name === "calc");
       el("tab-stl").classList.toggle("active", name === "stl");
       el("tab-calendar").classList.toggle("active", name === "calendar");
+      el("tab-receipt").classList.toggle("active", name === "receipt");
       el("tab-links").classList.toggle("active", name === "links");
       el("panel-dashboard").classList.toggle("hidden", name !== "dashboard");
       el("panel-calc").classList.toggle("hidden", name !== "calc");
       el("panel-stl").classList.toggle("hidden", name !== "stl");
       el("panel-calendar").classList.toggle("hidden", name !== "calendar");
+      el("panel-receipt").classList.toggle("hidden", name !== "receipt");
       el("panel-links").classList.toggle("hidden", name !== "links");
       document.body.classList.toggle("tab-links-active", name === "links");
-      document.body.classList.toggle("tab-tool-embed-active", name === "calc" || name === "stl" || name === "calendar");
+      document.body.classList.toggle("tab-tool-embed-active", name === "calc" || name === "stl" || name === "calendar" || name === "receipt");
 
       const heading = el("page-heading");
       const sub = el("page-subtitle");
@@ -876,12 +954,13 @@
 
       if (name === "dashboard") {
         heading.textContent = "대시보드";
-        sub.textContent = "STL·기록·도구 링크 현황을 한곳에서 확인합니다.";
+        sub.textContent = "STL·기록·도구 링크·저장 견적 현황을 한곳에서 확인합니다.";
         if (dashboardNeedsFetch) {
           await refreshDashboard();
         } else {
           renderStlList();
           renderRecordsFiltered();
+          renderQuotesList();
         }
       } else if (name === "calc") {
         heading.textContent = "석고 계산기";
@@ -895,6 +974,10 @@
         heading.textContent = "어울림 캘린더";
         sub.textContent = "월간 달력·메모 (GitHub Pages).";
         ensureCalendarEmbedLoaded();
+      } else if (name === "receipt") {
+        heading.textContent = "견적서";
+        sub.textContent = "견적 작성·저장 (GitHub Pages).";
+        ensureReceiptEmbedLoaded();
       } else {
         heading.textContent = "링크 허브";
         sub.textContent = "자주 쓰는 도구를 고정하고 이 창에서 바로 엽니다.";
@@ -905,15 +988,17 @@
     el("tab-calc").addEventListener("click", () => void setTab("calc"));
     el("tab-stl").addEventListener("click", () => void setTab("stl"));
     el("tab-calendar").addEventListener("click", () => void setTab("calendar"));
+    el("tab-receipt").addEventListener("click", () => void setTab("receipt"));
     el("tab-links").addEventListener("click", () => void setTab("links"));
 
     const SIDEBAR_NAV_ORDER_KEY = "eoulrimstudio-tools.sidebarNavOrder";
-    const SIDEBAR_TAB_ORDER_DEFAULT = ["dashboard", "calc", "stl", "calendar", "links"];
+    const SIDEBAR_TAB_ORDER_DEFAULT = ["dashboard", "calc", "stl", "calendar", "receipt", "links"];
     const SIDEBAR_TAB_LABELS = {
       dashboard: "대시보드",
       calc: "석고 계산기",
       stl: "STL 업로더",
       calendar: "어울림 캘린더",
+      receipt: "견적서",
       links: "링크 허브",
     };
 
@@ -954,6 +1039,7 @@
         calc: el("tab-calc"),
         stl: el("tab-stl"),
         calendar: el("tab-calendar"),
+        receipt: el("tab-receipt"),
         links: el("tab-links"),
       };
       order.forEach((id) => {
@@ -1147,6 +1233,7 @@
     const EMBED_CALC_ZOOM_KEY = "eoulrimstudio-tools.embedCalcZoom";
     const EMBED_STL_ZOOM_KEY = "eoulrimstudio-tools.embedStlZoom";
     const EMBED_CALENDAR_ZOOM_KEY = "eoulrimstudio-tools.embedCalendarZoom";
+    const EMBED_RECEIPT_ZOOM_KEY = "eoulrimstudio-tools.embedReceiptZoom";
 
     /** 저장값: 50~100 정수(%). 예전 소수 스케일(0.85 등)도 읽어서 변환 */
     function normalizeStoredZoomPercent(raw) {
@@ -1243,6 +1330,10 @@
     /** false면 대시보드 탭 재진입 시 네트워크 재요청 생략(메모리 목록만 다시 그림) */
     let dashboardNeedsFetch = true;
 
+    /** Worker GET /quotes + 각 본문 요약 */
+    let dashboardQuoteMetas = [];
+    let dashboardQuotesListError = false;
+
     function markDashboardStale() {
       dashboardNeedsFetch = true;
     }
@@ -1264,15 +1355,486 @@
       box.appendChild(line);
     }
 
+    function quoteStatusLabelFromPayloadUnified(data) {
+      if (!data || typeof data !== "object") return "—";
+      if (typeof data.quoteStatusLabel === "string" && data.quoteStatusLabel.trim())
+        return data.quoteStatusLabel.trim();
+      if (data.quoteComplete === true) return "완료";
+      if (data.quoteComplete === false) return "미작성";
+      return "—";
+    }
+
+    function escapeHtmlQuote(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function quoteLineParseNum(v) {
+      const n = Number(String(v).replace(/,/g, "").trim());
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function quoteFmtMoney(n) {
+      return Math.round(n).toLocaleString("ko-KR");
+    }
+
+    function quoteNormalizeVatPercent(raw) {
+      if (raw == null || String(raw).trim() === "") return 10;
+      const r = quoteLineParseNum(raw);
+      if (!Number.isFinite(r) || r < 0) return 10;
+      return r;
+    }
+
+    function quoteLineComputed(qtyRaw, unitRaw, vatPctRaw) {
+      const qty = quoteLineParseNum(qtyRaw);
+      const unit = quoteLineParseNum(unitRaw);
+      const pct = quoteNormalizeVatPercent(vatPctRaw);
+      const supply = qty * unit;
+      const vat = Math.round(supply * (pct / 100));
+      const amount = supply + vat;
+      return { supply, vat, amount, vatPct: pct };
+    }
+
+    function quoteVatColumnTitleSuffixHtml(lines, spanClassName) {
+      const keys = [];
+      for (const ln of Array.isArray(lines) ? lines : []) {
+        const { supply } = quoteLineComputed(ln.qty, ln.unitPrice, ln.vatPercent);
+        const hasContent =
+          String(ln.name || "").trim() !== "" ||
+          supply !== 0 ||
+          quoteLineParseNum(ln.qty) !== 0 ||
+          quoteLineParseNum(ln.unitPrice) !== 0;
+        if (!hasContent) continue;
+        keys.push(quoteNormalizeVatPercent(ln.vatPercent));
+      }
+      const pctInner =
+        keys.length && keys.every((k) => k === keys[0]) ? `${keys[0]}%` : "%";
+      return `<span class="${spanClassName}">(${pctInner})</span>`;
+    }
+
+    function buildQuoteLinesTableHtml(lines) {
+      if (!Array.isArray(lines) || !lines.length) {
+        return '<p class="dashboard-lines-empty">등록된 품목이 없습니다.</p>';
+      }
+      const body = lines
+        .map((l) => {
+          const name = String(l.name || "").trim();
+          const qty = String(l.qty || "").trim();
+          const unit = String(l.unitPrice || "").trim();
+          const { supply, vat, amount } = quoteLineComputed(l.qty, l.unitPrice, l.vatPercent ?? "10");
+          const hasContent =
+            name !== "" ||
+            supply !== 0 ||
+            quoteLineParseNum(l.qty) !== 0 ||
+            quoteLineParseNum(l.unitPrice) !== 0;
+          if (!hasContent) return "";
+          const showAmt =
+            supply !== 0 || quoteLineParseNum(l.qty) !== 0 || quoteLineParseNum(l.unitPrice) !== 0;
+          return `<tr>
+          <td>${escapeHtmlQuote(name || "—")}</td>
+          <td class="num">${escapeHtmlQuote(qty || "—")}</td>
+          <td class="num">${escapeHtmlQuote(unit || "—")}</td>
+          <td class="num">${showAmt ? escapeHtmlQuote(quoteFmtMoney(supply)) : "—"}</td>
+          <td class="num">${showAmt ? escapeHtmlQuote(quoteFmtMoney(vat)) : "—"}</td>
+          <td class="num">${showAmt ? escapeHtmlQuote(quoteFmtMoney(amount)) : "—"}</td>
+        </tr>`;
+        })
+        .filter(Boolean)
+        .join("");
+      if (!body) {
+        return '<p class="dashboard-lines-empty">등록된 품목이 없습니다.</p>';
+      }
+      return `<table class="dashboard-lines-sheet"><thead><tr>
+      <th>품명</th>
+      <th class="num">수량</th>
+      <th class="num">단가 <span class="dashboard-lines-th-sub">(VAT별도)</span></th>
+      <th class="num">공급가액</th>
+      <th class="num">부가세 ${quoteVatColumnTitleSuffixHtml(lines, "dashboard-lines-th-sub")}</th>
+      <th class="num">금액</th>
+    </tr></thead><tbody>${body}</tbody></table>`;
+    }
+
+    function fmtIssueDateKoUnified(isoYmd) {
+      if (!isoYmd) return "—";
+      const [y, mo, day] = String(isoYmd).split("-");
+      if (!y || !mo || !day) return String(isoYmd);
+      return `${y}.${mo}.${day}`;
+    }
+
+    function fmtSavedAtUnified(iso) {
+      if (!iso) return "—";
+      try {
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return String(iso);
+        return d.toLocaleString("ko-KR", { dateStyle: "medium", timeStyle: "short" });
+      } catch {
+        return String(iso);
+      }
+    }
+
+    async function mapPoolQuotes(items, limit, mapper) {
+      if (!items.length) return [];
+      const cap = Math.max(1, Math.min(limit, items.length));
+      const out = new Array(items.length);
+      let next = 0;
+      async function worker() {
+        for (;;) {
+          const i = next++;
+          if (i >= items.length) break;
+          out[i] = await mapper(items[i], i);
+        }
+      }
+      await Promise.all(Array.from({ length: cap }, () => worker()));
+      return out;
+    }
+
+    async function buildQuoteMetasFromItems(items) {
+      return mapPoolQuotes(items, 6, async (it) => {
+        const name = String(it.name ?? it.filename ?? "").trim();
+        if (!name) {
+          return {
+            name: "",
+            savedAt: "",
+            issue: "",
+            dispatch: "",
+            quoteSaveName: "",
+            statusLabel: "—",
+            companyName: "",
+            linesTableHtml: "",
+            err: true,
+          };
+        }
+        try {
+          const res = await fetch(`${WORKER_URL}/quotes/${encodeURIComponent(name)}`, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          const savedAt = data.savedAt || data.serverSavedDate || "";
+          const issue = data.issueDate || "";
+          const dispatch = data.dispatchNo || "";
+          return {
+            name,
+            savedAt,
+            issue,
+            dispatch,
+            quoteSaveName: String(data.quoteSaveName ?? "").trim(),
+            statusLabel: quoteStatusLabelFromPayloadUnified(data),
+            companyName: String(data.companyName ?? "").trim(),
+            linesTableHtml: buildQuoteLinesTableHtml(data.lines || []),
+            err: false,
+          };
+        } catch {
+          return {
+            name,
+            savedAt: "",
+            issue: "",
+            dispatch: "",
+            quoteSaveName: "",
+            statusLabel: "—",
+            companyName: "",
+            linesTableHtml: "",
+            err: true,
+          };
+        }
+      });
+    }
+
+    function sortQuoteMetasByIssue(metas, ascending) {
+      return [...metas].sort((a, b) => {
+        const ai = String(a.issue || "").trim();
+        const bi = String(b.issue || "").trim();
+        if (!ai && !bi) return String(b.savedAt || "").localeCompare(String(a.savedAt || ""));
+        if (!ai) return 1;
+        if (!bi) return -1;
+        let c = ai.localeCompare(bi);
+        if (c !== 0) return ascending ? c : -c;
+        return String(b.savedAt || "").localeCompare(String(a.savedAt || ""));
+      });
+    }
+
+    function sortQuoteMetasBySaved(metas, ascending) {
+      return [...metas].sort((a, b) => {
+        const as = String(a.savedAt || "").trim();
+        const bs = String(b.savedAt || "").trim();
+        if (!as && !bs) return String(b.issue || "").localeCompare(String(a.issue || ""));
+        if (!as) return 1;
+        if (!bs) return -1;
+        let c = as.localeCompare(bs);
+        if (c !== 0) return ascending ? c : -c;
+        return String(b.issue || "").localeCompare(String(a.issue || ""));
+      });
+    }
+
+    function sortQuoteMetas(metas, order) {
+      switch (order) {
+        case "issue-asc":
+          return sortQuoteMetasByIssue(metas, true);
+        case "saved-desc":
+          return sortQuoteMetasBySaved(metas, false);
+        case "saved-asc":
+          return sortQuoteMetasBySaved(metas, true);
+        case "issue-desc":
+        default:
+          return sortQuoteMetasByIssue(metas, false);
+      }
+    }
+
+    function getFilteredSortedQuoteMetas() {
+      const q = (el("quotes-search").value || "").trim().toLowerCase();
+      let list = dashboardQuoteMetas.slice();
+      if (q) {
+        list = list.filter((m) => {
+          const disp = String(m.dispatch || "").toLowerCase();
+          const save = String(m.quoteSaveName || "").toLowerCase();
+          const fn = String(m.name || "").toLowerCase();
+          const co = String(m.companyName || "").toLowerCase();
+          return disp.includes(q) || save.includes(q) || fn.includes(q) || co.includes(q);
+        });
+      }
+      const order = el("quotes-sort").value;
+      return sortQuoteMetas(list, order);
+    }
+
+    function syncQuotesWorkerHint() {
+      const hint = el("quotes-worker-hint");
+      if (!hint) return;
+      const base = WORKER_URL.replace(/^https?:\/\//, "");
+      hint.classList.remove("hidden");
+    }
+
+    function renderQuotesList() {
+      syncQuotesWorkerHint();
+      const root = el("quotes-list");
+      const emptyEl = el("quotes-empty");
+      root.innerHTML = "";
+      if (dashboardQuotesListError) {
+        emptyEl.textContent = "저장 견적 목록을 불러오지 못했습니다.";
+        emptyEl.classList.remove("hidden");
+        return;
+      }
+      const list = getFilteredSortedQuoteMetas();
+      emptyEl.textContent =
+        dashboardQuoteMetas.length === 0 ? "저장된 견적이 없습니다." : "조건에 맞는 견적이 없습니다.";
+      emptyEl.classList.toggle("hidden", list.length > 0);
+      list.forEach((m) => {
+        const dispatchStr = String(m.dispatch || "").trim();
+        const saveStr = String(m.quoteSaveName || "").trim();
+        const fileStem = String(m.name || "")
+          .replace(/\.json$/i, "")
+          .trim();
+        const titleLarge = saveStr || fileStem || m.name || "저장 이름 없음";
+
+        let stClass = "dashboard-status-pill is-complete";
+        if (m.statusLabel === "미작성") stClass = "dashboard-status-pill is-incomplete";
+        else if (m.statusLabel === "—" || m.err) stClass = "dashboard-status-pill is-unknown";
+
+        const card = document.createElement("div");
+        card.className = "dashboard-quote-card";
+
+        const floorTop = document.createElement("div");
+        floorTop.className = "dashboard-floor-top";
+
+        const summaryWrap = document.createElement("div");
+        summaryWrap.className = "dashboard-floor-summary";
+
+        const header = document.createElement("div");
+        header.className = "dashboard-quote-header";
+
+        const kicker = document.createElement("span");
+        kicker.className = "dashboard-quote-kicker";
+        kicker.textContent = "견적서";
+
+        const titleWrap = document.createElement("span");
+        titleWrap.className = "dashboard-quote-title-wrap";
+        const titleEl = document.createElement("span");
+        titleEl.className = "dashboard-quote-title";
+        titleEl.textContent = titleLarge;
+        titleWrap.appendChild(titleEl);
+
+        const dispatchSub = document.createElement("span");
+        dispatchSub.className = "dashboard-quote-dispatch-sub";
+        dispatchSub.textContent = dispatchStr ? `발송번호 ${dispatchStr}` : "발송번호 미입력";
+
+        header.append(kicker, titleWrap, dispatchSub);
+
+        if (!m.err && m.companyName) {
+          const coLine = document.createElement("div");
+          coLine.className = "dashboard-quote-company-sub";
+          coLine.textContent = m.companyName;
+          header.appendChild(coLine);
+        }
+
+        if (m.err) {
+          const warn = document.createElement("p");
+          warn.className = "dashboard-quote-warn";
+          warn.setAttribute("role", "status");
+          warn.textContent = "본문을 불러오지 못했습니다.";
+          summaryWrap.append(header, warn);
+        } else {
+          summaryWrap.appendChild(header);
+          if (m.name) {
+            const fnMuted = document.createElement("div");
+            fnMuted.className = "dashboard-quote-file-sub";
+            fnMuted.textContent = m.name;
+            summaryWrap.appendChild(fnMuted);
+          }
+        }
+
+        const statusWrap = document.createElement("div");
+        statusWrap.className = "dashboard-floor-status";
+        const pill = document.createElement("span");
+        pill.className = stClass;
+        pill.textContent = m.statusLabel || "—";
+        statusWrap.appendChild(pill);
+
+        const datesCol = document.createElement("div");
+        datesCol.className = "dashboard-floor-dates";
+
+        const lineIssue = document.createElement("span");
+        lineIssue.className = "dashboard-date-line";
+        const lblIssue = document.createElement("span");
+        lblIssue.className = "dashboard-date-lbl";
+        lblIssue.textContent = "발행";
+        const issueVal = document.createElement("span");
+        issueVal.textContent = fmtIssueDateKoUnified(m.issue);
+        lineIssue.append(lblIssue, issueVal);
+
+        const lineSaved = document.createElement("span");
+        lineSaved.className = "dashboard-date-line muted";
+        const lblSaved = document.createElement("span");
+        lblSaved.className = "dashboard-date-lbl";
+        lblSaved.textContent = "저장";
+        const savedVal = document.createElement("span");
+        savedVal.textContent = fmtSavedAtUnified(m.savedAt);
+        lineSaved.append(lblSaved, savedVal);
+
+        datesCol.append(lineIssue, lineSaved);
+
+        const actionsCol = document.createElement("div");
+        actionsCol.className = "dashboard-floor-actions";
+
+        const btnOpen = document.createElement("button");
+        btnOpen.type = "button";
+        btnOpen.className = "btn btn-sm btn-primary";
+        btnOpen.textContent = "수정";
+        btnOpen.title = "견적 앱에서 이 견적 수정";
+        btnOpen.disabled = !m.name;
+        btnOpen.addEventListener("click", () => {
+          window.open(receiptQuoteEditUrl(m.name), "_blank", "noopener,noreferrer");
+        });
+
+        const btnDel = document.createElement("button");
+        btnDel.type = "button";
+        btnDel.className = "btn btn-sm btn-danger";
+        btnDel.textContent = "삭제";
+        btnDel.disabled = !m.name;
+        btnDel.addEventListener("click", () => {
+          openDashboardConfirm(
+            `견적 «${m.name}»을(를) 서버에서 삭제할까요? 이 작업은 되돌릴 수 없습니다.`,
+            async () => {
+              closeModal(el("modal-dashboard-confirm"));
+              showLoading(true);
+              try {
+                const res = await fetch(`${WORKER_URL}/quotes/${encodeURIComponent(m.name)}`, { method: "DELETE" });
+                let data = {};
+                try {
+                  data = await res.json();
+                } catch {
+                  /* ignore */
+                }
+                if (!res.ok) {
+                  toast(data.error || `삭제 실패 (${res.status})`);
+                  return;
+                }
+                toast("삭제했습니다.", "success");
+                await refreshDashboardQuotesPanel();
+              } catch (err) {
+                toast(String(err.message || err));
+              } finally {
+                showLoading(false);
+              }
+            }
+          );
+        });
+
+        actionsCol.append(btnOpen, btnDel);
+        floorTop.append(summaryWrap, statusWrap, datesCol, actionsCol);
+        card.appendChild(floorTop);
+
+        if (!m.err && m.linesTableHtml) {
+          const details = document.createElement("details");
+          details.className = "dashboard-lines-details";
+          const summary = document.createElement("summary");
+          summary.className = "dashboard-lines-summary";
+          const sumTxt = document.createElement("span");
+          sumTxt.className = "dashboard-lines-summary-text";
+          sumTxt.textContent = "품목 표 펼치기";
+          summary.appendChild(sumTxt);
+          const floorBottom = document.createElement("div");
+          floorBottom.className = "dashboard-floor-bottom";
+          const embed = document.createElement("div");
+          embed.className = "dashboard-lines-embed";
+          embed.innerHTML = m.linesTableHtml;
+          floorBottom.appendChild(embed);
+          details.append(summary, floorBottom);
+          card.appendChild(details);
+        }
+
+        root.appendChild(card);
+      });
+    }
+
+    async function refreshDashboardQuotesPanel() {
+      el("dashboard-errors").innerHTML = "";
+      showLoading(true);
+      try {
+        const quotesRes = await fetch(`${WORKER_URL}/quotes`, { method: "GET", headers: { Accept: "application/json" } });
+        if (!quotesRes.ok) {
+          dashboardQuotesListError = true;
+          dashboardQuoteMetas = [];
+          el("stat-quotes").textContent = "—";
+          renderQuotesList();
+          toast(`저장 견적 목록 HTTP ${quotesRes.status}`);
+          return;
+        }
+        let items = [];
+        try {
+          const qj = parseWorkerJson(await quotesRes.text(), "GET /quotes");
+          items = Array.isArray(qj.items) ? qj.items : [];
+        } catch (e) {
+          toast(String(e.message || e));
+          dashboardQuotesListError = true;
+          dashboardQuoteMetas = [];
+          el("stat-quotes").textContent = "—";
+          renderQuotesList();
+          return;
+        }
+        dashboardQuotesListError = false;
+        el("stat-quotes").textContent = String(items.length);
+        dashboardQuoteMetas = await buildQuoteMetasFromItems(items);
+        renderQuotesList();
+      } catch (e) {
+        toast(String(e.message || e));
+      } finally {
+        showLoading(false);
+      }
+    }
+
     async function refreshDashboard() {
       el("dashboard-errors").innerHTML = "";
       const dashErrMsgs = [];
       showLoading(true);
       try {
-        const [listRes, recordsRes, toolsRes] = await Promise.all([
+        const [listRes, recordsRes, toolsRes, quotesRes] = await Promise.all([
           fetch(`${WORKER_URL}/list`, { method: "GET" }),
           fetch(`${WORKER_URL}/records`, { method: "GET" }),
           fetch(`${WORKER_URL}/tools`, { method: "GET" }),
+          fetch(`${WORKER_URL}/quotes`, { method: "GET", headers: { Accept: "application/json" } }),
         ]);
 
         let stlCount = "—";
@@ -1323,9 +1885,32 @@
         }
         el("stat-tools").textContent = toolsCount;
 
+        let quoteItems = [];
+        let quotesCount = "—";
+        if (quotesRes.ok) {
+          try {
+            const qj = parseWorkerJson(await quotesRes.text(), "GET /quotes");
+            quoteItems = Array.isArray(qj.items) ? qj.items : [];
+            quotesCount = String(quoteItems.length);
+            dashboardQuotesListError = false;
+          } catch (e) {
+            dashErrMsgs.push(String(e.message || e));
+            quoteItems = [];
+            quotesCount = "—";
+            dashboardQuotesListError = true;
+          }
+        } else {
+          dashErrMsgs.push(`저장 견적 목록 HTTP ${quotesRes.status}`.trim());
+          quoteItems = [];
+          dashboardQuotesListError = true;
+        }
+        el("stat-quotes").textContent = quotesCount;
+        dashboardQuoteMetas = dashboardQuotesListError ? [] : await buildQuoteMetasFromItems(quoteItems);
+
         dashboardFlushErrors(dashErrMsgs);
         renderStlList();
         syncRecordsViews();
+        renderQuotesList();
         dashboardNeedsFetch = false;
       } catch (e) {
         toast(String(e.message || e));
@@ -1804,6 +2389,16 @@
 
     bindDashPanelRefresh("dash-refresh-stl", refreshDashboardStlPanel);
     bindDashPanelRefresh("dash-refresh-records", refreshDashboardRecordsPanel);
+    bindDashPanelRefresh("dash-refresh-quotes", refreshDashboardQuotesPanel);
+
+    const quotesSearchEl = el("quotes-search");
+    quotesSearchEl.addEventListener("input", () => renderQuotesList());
+    quotesSearchEl.addEventListener("pointerdown", (e) => e.stopPropagation());
+    quotesSearchEl.addEventListener("click", (e) => e.stopPropagation());
+    const quotesSortEl = el("quotes-sort");
+    quotesSortEl.addEventListener("change", () => renderQuotesList());
+    quotesSortEl.addEventListener("pointerdown", (e) => e.stopPropagation());
+    quotesSortEl.addEventListener("click", (e) => e.stopPropagation());
 
     async function saveRecordsPayload(records) {
       showLoading(true);
@@ -2499,6 +3094,9 @@
     el("calendar-embed-new-tab").addEventListener("click", () => {
       window.open(EMBED_CALENDAR_URL, "_blank", "noopener,noreferrer");
     });
+    el("receipt-embed-new-tab").addEventListener("click", () => {
+      window.open(EMBED_RECEIPT_URL, "_blank", "noopener,noreferrer");
+    });
 
     window.addEventListener("DOMContentLoaded", async () => {
       await applyWorkerAuthGateOnLoad();
@@ -2512,6 +3110,7 @@
       initEmbedZoomControl("calc-embed-zoom", "calc-embed-zoom-value", "calc-embed-viewport", EMBED_CALC_ZOOM_KEY);
       initEmbedZoomControl("stl-embed-zoom", "stl-embed-zoom-value", "stl-embed-viewport", EMBED_STL_ZOOM_KEY);
       initEmbedZoomControl("calendar-embed-zoom", "calendar-embed-zoom-value", "calendar-embed-viewport", EMBED_CALENDAR_ZOOM_KEY);
+      initEmbedZoomControl("receipt-embed-zoom", "receipt-embed-zoom-value", "receipt-embed-viewport", EMBED_RECEIPT_ZOOM_KEY);
       await refreshDashboard();
       buildEmojiGrid();
       await loadLinksFromStorage();

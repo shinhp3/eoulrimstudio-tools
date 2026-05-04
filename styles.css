@@ -398,7 +398,7 @@ body {
 
 .kpi-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -438,6 +438,10 @@ body {
 
 .dashboard-grid > details.dash-panel {
   min-width: 0;
+}
+
+.dashboard-grid > details.dash-panel--full-span {
+  grid-column: 1 / -1;
 }
 
 details.dash-panel {
@@ -1833,7 +1837,7 @@ html.access-gate-active .app-shell {
   }
 
   .kpi-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     margin-bottom: 18px;
   }
@@ -2163,5 +2167,335 @@ html.access-gate-active .app-shell {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
+  }
+}
+
+/* ---------- 통합 대시보드 — 저장 견적 카드·품목 표 (receipt 대시보드 패턴) ---------- */
+
+#quotes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#quotes-list .dashboard-quote-card {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+#quotes-list .dashboard-quote-card:hover {
+  box-shadow: var(--shadow);
+}
+
+#quotes-list .dashboard-floor-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  gap: 8px 12px;
+  align-items: start;
+  padding: 10px 12px;
+}
+
+#quotes-list .dashboard-floor-summary {
+  min-width: 0;
+}
+
+#quotes-list .dashboard-floor-status {
+  justify-self: center;
+  padding-top: 2px;
+}
+
+#quotes-list .dashboard-floor-dates {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+#quotes-list .dashboard-date-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+#quotes-list .dashboard-date-line.muted {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 11px;
+}
+
+#quotes-list .dashboard-date-lbl {
+  flex: 0 0 auto;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+#quotes-list .dashboard-floor-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  justify-self: end;
+  flex-wrap: wrap;
+}
+
+#quotes-list .dashboard-floor-actions .btn-sm {
+  padding: 4px 9px;
+  font-size: 0.75rem;
+}
+
+#quotes-list .dashboard-quote-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 0 0 2px;
+}
+
+#quotes-list .dashboard-quote-kicker {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+#quotes-list .dashboard-quote-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+#quotes-list .dashboard-quote-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  word-break: keep-all;
+}
+
+#quotes-list .dashboard-quote-dispatch-sub {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.3;
+  word-break: keep-all;
+  font-variant-numeric: tabular-nums;
+}
+
+#quotes-list .dashboard-quote-company-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+#quotes-list .dashboard-quote-file-sub {
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--text-muted);
+  word-break: break-all;
+  line-height: 1.35;
+}
+
+#quotes-list .dashboard-quote-warn {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #c2410c;
+  font-weight: 600;
+}
+
+#quotes-list .dashboard-status-pill {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+#quotes-list .dashboard-status-pill.is-complete {
+  background: #dcfce7;
+  color: #166534;
+}
+
+#quotes-list .dashboard-status-pill.is-incomplete {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+#quotes-list .dashboard-status-pill.is-unknown {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+#quotes-list .dashboard-lines-embed {
+  overflow-x: auto;
+}
+
+#quotes-list .dashboard-lines-sheet {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  font-size: 11px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  overflow: hidden;
+}
+
+#quotes-list .dashboard-lines-sheet th,
+#quotes-list .dashboard-lines-sheet td {
+  border: 1px solid var(--border);
+  padding: 5px 8px;
+  text-align: left;
+}
+
+#quotes-list .dashboard-lines-sheet th {
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  font-weight: 700;
+  font-size: 10px;
+  color: #334155;
+}
+
+#quotes-list .dashboard-lines-th-sub {
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+#quotes-list .dashboard-lines-sheet .num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+#quotes-list .dashboard-lines-empty {
+  margin: 0;
+  padding: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+#quotes-list .dashboard-lines-details {
+  border-top: 1px solid var(--border-strong);
+}
+
+#quotes-list .dashboard-lines-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: linear-gradient(180deg, #fafbfc 0%, #f1f5f9 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+#quotes-list .dashboard-lines-summary::-webkit-details-marker {
+  display: none;
+}
+
+#quotes-list .dashboard-lines-summary:hover {
+  background: #eef2f7;
+}
+
+#quotes-list .dashboard-lines-summary-text {
+  flex: 1;
+  min-width: 0;
+}
+
+#quotes-list .dashboard-lines-summary::after {
+  content: "";
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  margin-left: 4px;
+  border-right: 2px solid #64748b;
+  border-bottom: 2px solid #64748b;
+  transform: rotate(45deg);
+  transition: transform 0.18s ease;
+}
+
+#quotes-list .dashboard-lines-details[open] .dashboard-lines-summary::after {
+  transform: rotate(-135deg);
+  margin-top: 2px;
+}
+
+#quotes-list .dashboard-lines-details .dashboard-floor-bottom {
+  border-top: none;
+}
+
+#quotes-list .dashboard-floor-bottom {
+  padding: 10px 12px 12px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 55%, #f1f5f9 100%);
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 900px) {
+  #quotes-list .dashboard-floor-top {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "sum sum"
+      "stat dates"
+      "act act";
+  }
+
+  #quotes-list .dashboard-floor-summary {
+    grid-area: sum;
+  }
+
+  #quotes-list .dashboard-floor-status {
+    grid-area: stat;
+    justify-self: start;
+  }
+
+  #quotes-list .dashboard-floor-dates {
+    grid-area: dates;
+    justify-self: end;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  #quotes-list .dashboard-floor-actions {
+    grid-area: act;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 520px) {
+  #quotes-list .dashboard-floor-top {
+    grid-template-columns: 1fr;
+    grid-template-areas: none;
+  }
+
+  #quotes-list .dashboard-floor-summary,
+  #quotes-list .dashboard-floor-status,
+  #quotes-list .dashboard-floor-dates,
+  #quotes-list .dashboard-floor-actions {
+    grid-area: auto;
+    justify-self: stretch;
+  }
+
+  #quotes-list .dashboard-floor-dates {
+    align-items: flex-start;
+    text-align: left;
   }
 }
