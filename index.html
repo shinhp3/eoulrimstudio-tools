@@ -187,8 +187,16 @@
                   </span>
                 </summary>
                 <div class="dash-panel__body dash-panel__body--pad">
-                  <div id="stl-list"></div>
+                  <div id="stl-list" class="stl-rows-host"></div>
                   <div id="stl-empty" class="empty-state hidden">등록된 STL이 없습니다.</div>
+                  <div id="stl-preview-footer" class="records-preview-footer hidden">
+                    <p class="hint records-preview-footer__hint">
+                      검색 결과 중 처음 <strong id="stl-preview-shown"></strong>건만 표시합니다.
+                    </p>
+                    <button type="button" class="btn btn-primary btn-sm" id="stl-open-full" aria-haspopup="dialog" aria-controls="modal-stl-full">
+                      전체 <span id="stl-preview-total"></span>건 보기
+                    </button>
+                  </div>
                 </div>
               </details>
 
@@ -252,14 +260,22 @@
                         <option value="saved-desc">저장 최신순</option>
                         <option value="saved-asc">저장 오래된순</option>
                       </select>
-                      <input type="search" class="input-search" id="quotes-search" placeholder="저장 이름·발송번호·파일명 검색…" autocomplete="off" />
+                      <input type="search" class="input-search" id="quotes-search" placeholder="저장 이름·발송번호 검색…" autocomplete="off" />
                     </div>
                   </span>
                 </summary>
                 <div class="dash-panel__body dash-panel__body--pad">
                   <p class="hint quotes-worker-hint hidden" id="quotes-worker-hint"></p>
-                  <div id="quotes-list"></div>
+                  <div id="quotes-list" class="quotes-cards-host"></div>
                   <div id="quotes-empty" class="empty-state hidden">저장된 견적이 없습니다.</div>
+                  <div id="quotes-preview-footer" class="records-preview-footer hidden">
+                    <p class="hint records-preview-footer__hint">
+                      검색 결과 중 처음 <strong id="quotes-preview-shown"></strong>건만 표시합니다.
+                    </p>
+                    <button type="button" class="btn btn-primary btn-sm" id="quotes-open-full" aria-haspopup="dialog" aria-controls="modal-quotes-full">
+                      전체 <span id="quotes-preview-total"></span>건 보기
+                    </button>
+                  </div>
                 </div>
               </details>
             </div>
@@ -488,6 +504,54 @@
       </div>
       <div class="modal-footer modal-records-full__footer">
         <button type="button" class="btn btn-primary" id="records-full-close">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 대시보드: STL 모델 전체 보기 -->
+  <div class="modal-overlay" id="modal-stl-full" role="dialog" aria-modal="true" aria-labelledby="stl-full-title">
+    <div class="modal modal-records-full">
+      <div class="modal-header" id="stl-full-title">STL 모델 전체</div>
+      <div class="modal-body modal-records-full__body">
+        <div class="records-toolbar records-toolbar--modal">
+          <label class="sr-only" for="stl-full-sort">정렬</label>
+          <select id="stl-full-sort" class="input-select" aria-label="STL 목록 정렬">
+            <option value="date-desc">최신순</option>
+            <option value="date-asc">오래된순</option>
+          </select>
+          <label class="sr-only" for="stl-full-search">파일명 검색</label>
+          <input type="search" id="stl-full-search" class="input-search" placeholder="파일명 검색…" autocomplete="off" />
+        </div>
+        <p class="hint records-full-count" id="stl-full-count" aria-live="polite"></p>
+        <div id="stl-full-list" class="stl-rows-host"></div>
+      </div>
+      <div class="modal-footer modal-records-full__footer">
+        <button type="button" class="btn btn-primary" id="stl-full-close">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 대시보드: 저장 견적 전체 보기 -->
+  <div class="modal-overlay" id="modal-quotes-full" role="dialog" aria-modal="true" aria-labelledby="quotes-full-title">
+    <div class="modal modal-records-full modal-quotes-full">
+      <div class="modal-header" id="quotes-full-title">저장 견적 전체</div>
+      <div class="modal-body modal-records-full__body">
+        <div class="records-toolbar records-toolbar--modal">
+          <label class="sr-only" for="quotes-full-sort">정렬</label>
+          <select id="quotes-full-sort" class="input-select" aria-label="견적 목록 정렬">
+            <option value="issue-desc">발행일 최신순</option>
+            <option value="issue-asc">발행일 오래된순</option>
+            <option value="saved-desc">저장 최신순</option>
+            <option value="saved-asc">저장 오래된순</option>
+          </select>
+          <label class="sr-only" for="quotes-full-search">견적 검색</label>
+          <input type="search" id="quotes-full-search" class="input-search" placeholder="저장 이름·발송번호 검색…" autocomplete="off" />
+        </div>
+        <p class="hint records-full-count" id="quotes-full-count" aria-live="polite"></p>
+        <div id="quotes-full-list" class="quotes-cards-host"></div>
+      </div>
+      <div class="modal-footer modal-records-full__footer">
+        <button type="button" class="btn btn-primary" id="quotes-full-close">닫기</button>
       </div>
     </div>
   </div>
@@ -958,9 +1022,9 @@
         if (dashboardNeedsFetch) {
           await refreshDashboard();
         } else {
-          renderStlList();
+          syncStlViews();
           renderRecordsFiltered();
-          renderQuotesList();
+          syncQuotesViews();
         }
       } else if (name === "calc") {
         heading.textContent = "석고 계산기";
@@ -1311,6 +1375,18 @@
 
     window.addEventListener("keydown", (ev) => {
       if (ev.key !== "Escape") return;
+      const mqf = el("modal-quotes-full");
+      if (mqf && mqf.classList.contains("open")) {
+        closeQuotesFullModal();
+        ev.preventDefault();
+        return;
+      }
+      const msf = el("modal-stl-full");
+      if (msf && msf.classList.contains("open")) {
+        closeStlFullModal();
+        ev.preventDefault();
+        return;
+      }
       const mrf = el("modal-records-full");
       if (mrf && mrf.classList.contains("open")) {
         closeRecordsFullModal();
@@ -1333,6 +1409,7 @@
     /** Worker GET /quotes + 각 본문 요약 */
     let dashboardQuoteMetas = [];
     let dashboardQuotesListError = false;
+    const DASHBOARD_QUOTES_PREVIEW_LIMIT = 5;
 
     function markDashboardStale() {
       dashboardNeedsFetch = true;
@@ -1584,8 +1661,8 @@
       }
     }
 
-    function getFilteredSortedQuoteMetas() {
-      const q = (el("quotes-search").value || "").trim().toLowerCase();
+    function getFilteredSortedQuoteMetasQuery(searchRaw, sortVal) {
+      const q = (searchRaw || "").trim().toLowerCase();
       let list = dashboardQuoteMetas.slice();
       if (q) {
         list = list.filter((m) => {
@@ -1596,197 +1673,230 @@
           return disp.includes(q) || save.includes(q) || fn.includes(q) || co.includes(q);
         });
       }
-      const order = el("quotes-sort").value;
-      return sortQuoteMetas(list, order);
+      return sortQuoteMetas(list, sortVal || "issue-desc");
+    }
+
+    function getFilteredSortedQuoteMetas() {
+      return getFilteredSortedQuoteMetasQuery(el("quotes-search").value, el("quotes-sort").value);
     }
 
     function syncQuotesWorkerHint() {
       const hint = el("quotes-worker-hint");
       if (!hint) return;
       const base = WORKER_URL.replace(/^https?:\/\//, "");
+      hint.textContent = `목록·본문은 동일 Worker(${base})의 /quotes API에서 가져옵니다. 「수정」은 견적 앱 작성 화면으로 연결됩니다.`;
       hint.classList.remove("hidden");
+    }
+
+    function createQuoteCardElement(m) {
+      const dispatchStr = String(m.dispatch || "").trim();
+      const saveStr = String(m.quoteSaveName || "").trim();
+      const fileStem = String(m.name || "")
+        .replace(/\.json$/i, "")
+        .trim();
+      const titleLarge = saveStr || fileStem || m.name || "저장 이름 없음";
+
+      let stClass = "dashboard-status-pill is-complete";
+      if (m.statusLabel === "미작성") stClass = "dashboard-status-pill is-incomplete";
+      else if (m.statusLabel === "—" || m.err) stClass = "dashboard-status-pill is-unknown";
+
+      const card = document.createElement("div");
+      card.className = "dashboard-quote-card";
+
+      const floorTop = document.createElement("div");
+      floorTop.className = "dashboard-floor-top";
+
+      const summaryWrap = document.createElement("div");
+      summaryWrap.className = "dashboard-floor-summary";
+
+      const header = document.createElement("div");
+      header.className = "dashboard-quote-header";
+
+      const kicker = document.createElement("span");
+      kicker.className = "dashboard-quote-kicker";
+      kicker.textContent = "견적서";
+
+      const titleWrap = document.createElement("span");
+      titleWrap.className = "dashboard-quote-title-wrap";
+      const titleEl = document.createElement("span");
+      titleEl.className = "dashboard-quote-title";
+      titleEl.textContent = titleLarge;
+      titleWrap.appendChild(titleEl);
+
+      const dispatchSub = document.createElement("span");
+      dispatchSub.className = "dashboard-quote-dispatch-sub";
+      dispatchSub.textContent = dispatchStr ? `발송번호 ${dispatchStr}` : "발송번호 미입력";
+
+      header.append(kicker, titleWrap, dispatchSub);
+
+      if (m.err) {
+        const warn = document.createElement("p");
+        warn.className = "dashboard-quote-warn";
+        warn.setAttribute("role", "status");
+        warn.textContent = "본문을 불러오지 못했습니다.";
+        summaryWrap.append(header, warn);
+      } else {
+        summaryWrap.appendChild(header);
+      }
+
+      const statusWrap = document.createElement("div");
+      statusWrap.className = "dashboard-floor-status";
+      const pill = document.createElement("span");
+      pill.className = stClass;
+      pill.textContent = m.statusLabel || "—";
+      statusWrap.appendChild(pill);
+
+      const datesCol = document.createElement("div");
+      datesCol.className = "dashboard-floor-dates";
+
+      const lineIssue = document.createElement("span");
+      lineIssue.className = "dashboard-date-line";
+      const lblIssue = document.createElement("span");
+      lblIssue.className = "dashboard-date-lbl";
+      lblIssue.textContent = "발행";
+      const issueVal = document.createElement("span");
+      issueVal.textContent = fmtIssueDateKoUnified(m.issue);
+      lineIssue.append(lblIssue, issueVal);
+
+      const lineSaved = document.createElement("span");
+      lineSaved.className = "dashboard-date-line muted";
+      const lblSaved = document.createElement("span");
+      lblSaved.className = "dashboard-date-lbl";
+      lblSaved.textContent = "저장";
+      const savedVal = document.createElement("span");
+      savedVal.textContent = fmtSavedAtUnified(m.savedAt);
+      lineSaved.append(lblSaved, savedVal);
+
+      datesCol.append(lineIssue, lineSaved);
+
+      const actionsCol = document.createElement("div");
+      actionsCol.className = "dashboard-floor-actions dash-actions";
+
+      const btnOpen = document.createElement("button");
+      btnOpen.type = "button";
+      btnOpen.className = "btn btn-sm btn-primary";
+      btnOpen.textContent = "수정";
+      btnOpen.title = "견적 앱에서 이 견적 수정";
+      btnOpen.disabled = !m.name;
+      btnOpen.addEventListener("click", () => {
+        window.open(receiptQuoteEditUrl(m.name), "_blank", "noopener,noreferrer");
+      });
+
+      const btnDel = document.createElement("button");
+      btnDel.type = "button";
+      btnDel.className = "btn btn-sm btn-danger";
+      btnDel.textContent = "삭제";
+      btnDel.disabled = !m.name;
+      btnDel.addEventListener("click", () => {
+        openDashboardConfirm(
+          `견적 «${m.name}»을(를) 서버에서 삭제할까요? 이 작업은 되돌릴 수 없습니다.`,
+          async () => {
+            closeModal(el("modal-dashboard-confirm"));
+            showLoading(true);
+            try {
+              const res = await fetch(`${WORKER_URL}/quotes/${encodeURIComponent(m.name)}`, { method: "DELETE" });
+              let data = {};
+              try {
+                data = await res.json();
+              } catch {
+                /* ignore */
+              }
+              if (!res.ok) {
+                toast(data.error || `삭제 실패 (${res.status})`);
+                return;
+              }
+              toast("삭제했습니다.", "success");
+              await refreshDashboardQuotesPanel();
+            } catch (err) {
+              toast(String(err.message || err));
+            } finally {
+              showLoading(false);
+            }
+          }
+        );
+      });
+
+      actionsCol.append(btnOpen, btnDel);
+      floorTop.append(summaryWrap, statusWrap, datesCol, actionsCol);
+      card.appendChild(floorTop);
+
+      if (!m.err && m.linesTableHtml) {
+        const details = document.createElement("details");
+        details.className = "dashboard-lines-details";
+        const summary = document.createElement("summary");
+        summary.className = "dashboard-lines-summary";
+        const sumTxt = document.createElement("span");
+        sumTxt.className = "dashboard-lines-summary-text";
+        sumTxt.textContent = "품목 표 펼치기";
+        summary.appendChild(sumTxt);
+        const floorBottom = document.createElement("div");
+        floorBottom.className = "dashboard-floor-bottom";
+        const embed = document.createElement("div");
+        embed.className = "dashboard-lines-embed";
+        embed.innerHTML = m.linesTableHtml;
+        floorBottom.appendChild(embed);
+        details.append(summary, floorBottom);
+        card.appendChild(details);
+      }
+
+      return card;
     }
 
     function renderQuotesList() {
       syncQuotesWorkerHint();
       const root = el("quotes-list");
       const emptyEl = el("quotes-empty");
+      const footer = el("quotes-preview-footer");
       root.innerHTML = "";
       if (dashboardQuotesListError) {
         emptyEl.textContent = "저장 견적 목록을 불러오지 못했습니다.";
         emptyEl.classList.remove("hidden");
+        footer.classList.add("hidden");
         return;
       }
       const list = getFilteredSortedQuoteMetas();
       emptyEl.textContent =
         dashboardQuoteMetas.length === 0 ? "저장된 견적이 없습니다." : "조건에 맞는 견적이 없습니다.";
       emptyEl.classList.toggle("hidden", list.length > 0);
-      list.forEach((m) => {
-        const dispatchStr = String(m.dispatch || "").trim();
-        const saveStr = String(m.quoteSaveName || "").trim();
-        const fileStem = String(m.name || "")
-          .replace(/\.json$/i, "")
-          .trim();
-        const titleLarge = saveStr || fileStem || m.name || "저장 이름 없음";
+      const limit = DASHBOARD_QUOTES_PREVIEW_LIMIT;
+      const preview = list.length > limit ? list.slice(0, limit) : list;
+      preview.forEach((m) => root.appendChild(createQuoteCardElement(m)));
+      if (list.length > limit) {
+        footer.classList.remove("hidden");
+        el("quotes-preview-shown").textContent = String(limit);
+        el("quotes-preview-total").textContent = String(list.length);
+      } else {
+        footer.classList.add("hidden");
+      }
+    }
 
-        let stClass = "dashboard-status-pill is-complete";
-        if (m.statusLabel === "미작성") stClass = "dashboard-status-pill is-incomplete";
-        else if (m.statusLabel === "—" || m.err) stClass = "dashboard-status-pill is-unknown";
+    function renderQuotesFullList() {
+      const root = el("quotes-full-list");
+      root.innerHTML = "";
+      const list = getFilteredSortedQuoteMetasQuery(el("quotes-full-search").value, el("quotes-full-sort").value);
+      el("quotes-full-count").textContent =
+        list.length === 0 ? "일치하는 견적이 없습니다." : `표시 중 ${list.length}건`;
+      list.forEach((m) => root.appendChild(createQuoteCardElement(m)));
+    }
 
-        const card = document.createElement("div");
-        card.className = "dashboard-quote-card";
+    function syncQuotesViews() {
+      renderQuotesList();
+      const mqf = el("modal-quotes-full");
+      if (mqf && mqf.classList.contains("open")) {
+        renderQuotesFullList();
+      }
+    }
 
-        const floorTop = document.createElement("div");
-        floorTop.className = "dashboard-floor-top";
+    function openQuotesFullModal() {
+      el("quotes-full-search").value = el("quotes-search").value;
+      el("quotes-full-sort").value = el("quotes-sort").value;
+      renderQuotesFullList();
+      openModal(el("modal-quotes-full"));
+      requestAnimationFrame(() => el("quotes-full-search").focus());
+    }
 
-        const summaryWrap = document.createElement("div");
-        summaryWrap.className = "dashboard-floor-summary";
-
-        const header = document.createElement("div");
-        header.className = "dashboard-quote-header";
-
-        const kicker = document.createElement("span");
-        kicker.className = "dashboard-quote-kicker";
-        kicker.textContent = "견적서";
-
-        const titleWrap = document.createElement("span");
-        titleWrap.className = "dashboard-quote-title-wrap";
-        const titleEl = document.createElement("span");
-        titleEl.className = "dashboard-quote-title";
-        titleEl.textContent = titleLarge;
-        titleWrap.appendChild(titleEl);
-
-        const dispatchSub = document.createElement("span");
-        dispatchSub.className = "dashboard-quote-dispatch-sub";
-        dispatchSub.textContent = dispatchStr ? `발송번호 ${dispatchStr}` : "발송번호 미입력";
-
-        header.append(kicker, titleWrap, dispatchSub);
-
-        if (!m.err && m.companyName) {
-          const coLine = document.createElement("div");
-          coLine.className = "dashboard-quote-company-sub";
-          coLine.textContent = m.companyName;
-          header.appendChild(coLine);
-        }
-
-        if (m.err) {
-          const warn = document.createElement("p");
-          warn.className = "dashboard-quote-warn";
-          warn.setAttribute("role", "status");
-          warn.textContent = "본문을 불러오지 못했습니다.";
-          summaryWrap.append(header, warn);
-        } else {
-          summaryWrap.appendChild(header);
-          if (m.name) {
-            const fnMuted = document.createElement("div");
-            fnMuted.className = "dashboard-quote-file-sub";
-            fnMuted.textContent = m.name;
-            summaryWrap.appendChild(fnMuted);
-          }
-        }
-
-        const statusWrap = document.createElement("div");
-        statusWrap.className = "dashboard-floor-status";
-        const pill = document.createElement("span");
-        pill.className = stClass;
-        pill.textContent = m.statusLabel || "—";
-        statusWrap.appendChild(pill);
-
-        const datesCol = document.createElement("div");
-        datesCol.className = "dashboard-floor-dates";
-
-        const lineIssue = document.createElement("span");
-        lineIssue.className = "dashboard-date-line";
-        const lblIssue = document.createElement("span");
-        lblIssue.className = "dashboard-date-lbl";
-        lblIssue.textContent = "발행";
-        const issueVal = document.createElement("span");
-        issueVal.textContent = fmtIssueDateKoUnified(m.issue);
-        lineIssue.append(lblIssue, issueVal);
-
-        const lineSaved = document.createElement("span");
-        lineSaved.className = "dashboard-date-line muted";
-        const lblSaved = document.createElement("span");
-        lblSaved.className = "dashboard-date-lbl";
-        lblSaved.textContent = "저장";
-        const savedVal = document.createElement("span");
-        savedVal.textContent = fmtSavedAtUnified(m.savedAt);
-        lineSaved.append(lblSaved, savedVal);
-
-        datesCol.append(lineIssue, lineSaved);
-
-        const actionsCol = document.createElement("div");
-        actionsCol.className = "dashboard-floor-actions";
-
-        const btnOpen = document.createElement("button");
-        btnOpen.type = "button";
-        btnOpen.className = "btn btn-sm btn-primary";
-        btnOpen.textContent = "수정";
-        btnOpen.title = "견적 앱에서 이 견적 수정";
-        btnOpen.disabled = !m.name;
-        btnOpen.addEventListener("click", () => {
-          window.open(receiptQuoteEditUrl(m.name), "_blank", "noopener,noreferrer");
-        });
-
-        const btnDel = document.createElement("button");
-        btnDel.type = "button";
-        btnDel.className = "btn btn-sm btn-danger";
-        btnDel.textContent = "삭제";
-        btnDel.disabled = !m.name;
-        btnDel.addEventListener("click", () => {
-          openDashboardConfirm(
-            `견적 «${m.name}»을(를) 서버에서 삭제할까요? 이 작업은 되돌릴 수 없습니다.`,
-            async () => {
-              closeModal(el("modal-dashboard-confirm"));
-              showLoading(true);
-              try {
-                const res = await fetch(`${WORKER_URL}/quotes/${encodeURIComponent(m.name)}`, { method: "DELETE" });
-                let data = {};
-                try {
-                  data = await res.json();
-                } catch {
-                  /* ignore */
-                }
-                if (!res.ok) {
-                  toast(data.error || `삭제 실패 (${res.status})`);
-                  return;
-                }
-                toast("삭제했습니다.", "success");
-                await refreshDashboardQuotesPanel();
-              } catch (err) {
-                toast(String(err.message || err));
-              } finally {
-                showLoading(false);
-              }
-            }
-          );
-        });
-
-        actionsCol.append(btnOpen, btnDel);
-        floorTop.append(summaryWrap, statusWrap, datesCol, actionsCol);
-        card.appendChild(floorTop);
-
-        if (!m.err && m.linesTableHtml) {
-          const details = document.createElement("details");
-          details.className = "dashboard-lines-details";
-          const summary = document.createElement("summary");
-          summary.className = "dashboard-lines-summary";
-          const sumTxt = document.createElement("span");
-          sumTxt.className = "dashboard-lines-summary-text";
-          sumTxt.textContent = "품목 표 펼치기";
-          summary.appendChild(sumTxt);
-          const floorBottom = document.createElement("div");
-          floorBottom.className = "dashboard-floor-bottom";
-          const embed = document.createElement("div");
-          embed.className = "dashboard-lines-embed";
-          embed.innerHTML = m.linesTableHtml;
-          floorBottom.appendChild(embed);
-          details.append(summary, floorBottom);
-          card.appendChild(details);
-        }
-
-        root.appendChild(card);
-      });
+    function closeQuotesFullModal() {
+      closeModal(el("modal-quotes-full"));
     }
 
     async function refreshDashboardQuotesPanel() {
@@ -1798,7 +1908,7 @@
           dashboardQuotesListError = true;
           dashboardQuoteMetas = [];
           el("stat-quotes").textContent = "—";
-          renderQuotesList();
+          syncQuotesViews();
           toast(`저장 견적 목록 HTTP ${quotesRes.status}`);
           return;
         }
@@ -1811,13 +1921,13 @@
           dashboardQuotesListError = true;
           dashboardQuoteMetas = [];
           el("stat-quotes").textContent = "—";
-          renderQuotesList();
+          syncQuotesViews();
           return;
         }
         dashboardQuotesListError = false;
         el("stat-quotes").textContent = String(items.length);
         dashboardQuoteMetas = await buildQuoteMetasFromItems(items);
-        renderQuotesList();
+        syncQuotesViews();
       } catch (e) {
         toast(String(e.message || e));
       } finally {
@@ -1908,9 +2018,9 @@
         dashboardQuoteMetas = dashboardQuotesListError ? [] : await buildQuoteMetasFromItems(quoteItems);
 
         dashboardFlushErrors(dashErrMsgs);
-        renderStlList();
+        syncStlViews();
         syncRecordsViews();
-        renderQuotesList();
+        syncQuotesViews();
         dashboardNeedsFetch = false;
       } catch (e) {
         toast(String(e.message || e));
@@ -1940,7 +2050,7 @@
           dashboardFiles = [];
           el("stat-stl").textContent = "—";
         }
-        renderStlList();
+        syncStlViews();
       } catch (e) {
         toast(String(e.message || e));
       } finally {
@@ -1960,6 +2070,8 @@
       "created_at",
       "modified_at",
     ];
+
+    const DASHBOARD_STL_PREVIEW_LIMIT = 5;
 
     function parseStlTimeToMs(raw) {
       if (raw == null || raw === "") return NaN;
@@ -1991,13 +2103,14 @@
       }
     }
 
-    function getFilteredSortedStlFiles() {
-      const q = (el("stl-search").value || "").trim().toLowerCase();
+    function getFilteredSortedStlFilesQuery(searchRaw, sortVal) {
+      const q = (searchRaw || "").trim().toLowerCase();
       let list = dashboardFiles.slice();
       if (q) {
         list = list.filter((f) => String(f.filename || "").toLowerCase().includes(q));
       }
-      const sortDesc = el("stl-sort").value !== "date-asc";
+      const sortKey = sortVal != null && sortVal !== "" ? sortVal : el("stl-sort").value;
+      const sortDesc = sortKey !== "date-asc";
       list.sort((a, b) => {
         const ta = getStlFileTimeMs(a);
         const tb = getStlFileTimeMs(b);
@@ -2014,105 +2127,158 @@
       return list;
     }
 
+    function getFilteredSortedStlFiles() {
+      return getFilteredSortedStlFilesQuery(el("stl-search").value, el("stl-sort").value);
+    }
+
+    function createStlRowElement(f) {
+      const fn = f.filename || "";
+      const url = f.url || "";
+      const row = document.createElement("div");
+      row.className = "stl-row";
+      const info = document.createElement("div");
+      info.className = "stl-info";
+      const nameEl = document.createElement("div");
+      nameEl.className = "stl-name";
+      nameEl.textContent = fn;
+      info.appendChild(nameEl);
+      const uploadedLabel = formatStlUploadedLabel(f);
+      if (uploadedLabel) {
+        const metaEl = document.createElement("div");
+        metaEl.className = "stl-meta";
+        metaEl.textContent = uploadedLabel;
+        info.appendChild(metaEl);
+      }
+      const actions = document.createElement("div");
+      actions.className = "stl-actions dash-actions";
+
+      const btnCopy = document.createElement("button");
+      btnCopy.type = "button";
+      btnCopy.className = "btn btn-sm btn-slate";
+      btnCopy.textContent = "URL 복사";
+      btnCopy.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(url);
+          toast("URL을 복사했습니다.", "success");
+        } catch {
+          toast("복사에 실패했습니다.");
+        }
+      });
+
+      const btnOpen = document.createElement("button");
+      btnOpen.type = "button";
+      btnOpen.className = "btn btn-sm btn-primary";
+      btnOpen.textContent = "열기";
+      btnOpen.addEventListener("click", () => {
+        window.open(url, "_blank", "noopener,noreferrer");
+      });
+
+      const btnDel = document.createElement("button");
+      btnDel.type = "button";
+      btnDel.className = "btn btn-sm btn-danger";
+      btnDel.textContent = "삭제";
+      btnDel.addEventListener("click", () => {
+        openDashboardConfirm(`STL 파일 «${fn}»을(를) 삭제할까요? 이 작업은 되돌릴 수 없습니다.`, async () => {
+          closeModal(el("modal-dashboard-confirm"));
+          showLoading(true);
+          try {
+            const res = await fetch(`${WORKER_URL}/delete`, {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ filename: fn }),
+            });
+            let data = {};
+            try {
+              data = await res.json();
+            } catch {
+              /* ignore */
+            }
+            if (!res.ok || data.success === false) {
+              toast(data.error || `삭제 실패 (${res.status})`);
+              return;
+            }
+            toast("삭제했습니다.", "success");
+            await refreshDashboard();
+          } catch (err) {
+            toast(String(err.message || err));
+          } finally {
+            showLoading(false);
+          }
+        });
+      });
+
+      actions.append(btnCopy, btnOpen, btnDel);
+      row.append(info, actions);
+      return row;
+    }
+
     function renderStlList() {
       const root = el("stl-list");
+      const emptyEl = el("stl-empty");
+      const footer = el("stl-preview-footer");
       root.innerHTML = "";
       const list = getFilteredSortedStlFiles();
-      const emptyEl = el("stl-empty");
       emptyEl.textContent =
         dashboardFiles.length === 0 ? "등록된 STL이 없습니다." : "조건에 맞는 STL이 없습니다.";
       emptyEl.classList.toggle("hidden", list.length > 0);
-      list.forEach((f) => {
-        const fn = f.filename || "";
-        const url = f.url || "";
-        const row = document.createElement("div");
-        row.className = "stl-row";
-        const info = document.createElement("div");
-        info.className = "stl-info";
-        const nameEl = document.createElement("div");
-        nameEl.className = "stl-name";
-        nameEl.textContent = fn;
-        info.appendChild(nameEl);
-        const uploadedLabel = formatStlUploadedLabel(f);
-        if (uploadedLabel) {
-          const metaEl = document.createElement("div");
-          metaEl.className = "stl-meta";
-          metaEl.textContent = uploadedLabel;
-          info.appendChild(metaEl);
-        }
-        const actions = document.createElement("div");
-        actions.className = "stl-actions";
+      const limit = DASHBOARD_STL_PREVIEW_LIMIT;
+      const preview = list.length > limit ? list.slice(0, limit) : list;
+      preview.forEach((f) => root.appendChild(createStlRowElement(f)));
+      if (list.length > limit) {
+        footer.classList.remove("hidden");
+        el("stl-preview-shown").textContent = String(limit);
+        el("stl-preview-total").textContent = String(list.length);
+      } else {
+        footer.classList.add("hidden");
+      }
+    }
 
-        const btnCopy = document.createElement("button");
-        btnCopy.type = "button";
-        btnCopy.className = "btn btn-sm";
-        btnCopy.textContent = "URL 복사";
-        btnCopy.addEventListener("click", async () => {
-          try {
-            await navigator.clipboard.writeText(url);
-            toast("URL을 복사했습니다.", "success");
-          } catch {
-            toast("복사에 실패했습니다.");
-          }
-        });
+    function renderStlFullList() {
+      const root = el("stl-full-list");
+      root.innerHTML = "";
+      const list = getFilteredSortedStlFilesQuery(el("stl-full-search").value, el("stl-full-sort").value);
+      el("stl-full-count").textContent =
+        list.length === 0 ? "일치하는 STL이 없습니다." : `표시 중 ${list.length}건`;
+      list.forEach((f) => root.appendChild(createStlRowElement(f)));
+    }
 
-        const btnOpen = document.createElement("button");
-        btnOpen.type = "button";
-        btnOpen.className = "btn btn-sm btn-primary";
-        btnOpen.textContent = "열기";
-        btnOpen.addEventListener("click", () => {
-          window.open(url, "_blank", "noopener,noreferrer");
-        });
+    function syncStlViews() {
+      renderStlList();
+      const msf = el("modal-stl-full");
+      if (msf && msf.classList.contains("open")) {
+        renderStlFullList();
+      }
+    }
 
-        const btnDel = document.createElement("button");
-        btnDel.type = "button";
-        btnDel.className = "btn btn-sm btn-danger";
-        btnDel.textContent = "삭제";
-        btnDel.addEventListener("click", () => {
-          openDashboardConfirm(`STL 파일 «${fn}»을(를) 삭제할까요? 이 작업은 되돌릴 수 없습니다.`, async () => {
-            closeModal(el("modal-dashboard-confirm"));
-            showLoading(true);
-            try {
-              const res = await fetch(`${WORKER_URL}/delete`, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ filename: fn }),
-              });
-              let data = {};
-              try {
-                data = await res.json();
-              } catch {
-                /* ignore */
-              }
-              if (!res.ok || data.success === false) {
-                toast(data.error || `삭제 실패 (${res.status})`);
-                return;
-              }
-              toast("삭제했습니다.", "success");
-              await refreshDashboard();
-            } catch (err) {
-              toast(String(err.message || err));
-            } finally {
-              showLoading(false);
-            }
-          });
-        });
+    function openStlFullModal() {
+      el("stl-full-search").value = el("stl-search").value;
+      el("stl-full-sort").value = el("stl-sort").value;
+      renderStlFullList();
+      openModal(el("modal-stl-full"));
+      requestAnimationFrame(() => el("stl-full-search").focus());
+    }
 
-        actions.append(btnCopy, btnOpen, btnDel);
-        row.append(info, actions);
-        root.appendChild(row);
-      });
+    function closeStlFullModal() {
+      closeModal(el("modal-stl-full"));
     }
 
     const stlSearchEl = el("stl-search");
-    stlSearchEl.addEventListener("input", () => renderStlList());
+    stlSearchEl.addEventListener("input", () => syncStlViews());
     stlSearchEl.addEventListener("pointerdown", (e) => e.stopPropagation());
     stlSearchEl.addEventListener("click", (e) => e.stopPropagation());
 
     const stlSortEl = el("stl-sort");
-    stlSortEl.addEventListener("change", () => renderStlList());
+    stlSortEl.addEventListener("change", () => syncStlViews());
     stlSortEl.addEventListener("pointerdown", (e) => e.stopPropagation());
     stlSortEl.addEventListener("click", (e) => e.stopPropagation());
+
+    el("stl-open-full").addEventListener("click", () => openStlFullModal());
+    el("stl-full-close").addEventListener("click", () => closeStlFullModal());
+    el("stl-full-search").addEventListener("input", () => renderStlFullList());
+    el("stl-full-sort").addEventListener("change", () => renderStlFullList());
+    el("modal-stl-full").addEventListener("click", (e) => {
+      if (e.target === el("modal-stl-full")) closeStlFullModal();
+    });
 
     const DASHBOARD_RECORDS_PREVIEW_LIMIT = 5;
 
@@ -2232,11 +2398,11 @@
       memo.textContent = r.memo ?? "";
 
       const actions = document.createElement("div");
-      actions.className = "record-actions";
+      actions.className = "record-actions dash-actions";
 
       const btnEdit = document.createElement("button");
       btnEdit.type = "button";
-      btnEdit.className = "btn btn-sm";
+      btnEdit.className = "btn btn-sm btn-primary";
       btnEdit.textContent = "수정";
       btnEdit.addEventListener("click", () => openRecordEditModal(r));
 
@@ -2392,13 +2558,21 @@
     bindDashPanelRefresh("dash-refresh-quotes", refreshDashboardQuotesPanel);
 
     const quotesSearchEl = el("quotes-search");
-    quotesSearchEl.addEventListener("input", () => renderQuotesList());
+    quotesSearchEl.addEventListener("input", () => syncQuotesViews());
     quotesSearchEl.addEventListener("pointerdown", (e) => e.stopPropagation());
     quotesSearchEl.addEventListener("click", (e) => e.stopPropagation());
     const quotesSortEl = el("quotes-sort");
-    quotesSortEl.addEventListener("change", () => renderQuotesList());
+    quotesSortEl.addEventListener("change", () => syncQuotesViews());
     quotesSortEl.addEventListener("pointerdown", (e) => e.stopPropagation());
     quotesSortEl.addEventListener("click", (e) => e.stopPropagation());
+
+    el("quotes-open-full").addEventListener("click", () => openQuotesFullModal());
+    el("quotes-full-close").addEventListener("click", () => closeQuotesFullModal());
+    el("quotes-full-search").addEventListener("input", () => renderQuotesFullList());
+    el("quotes-full-sort").addEventListener("change", () => renderQuotesFullList());
+    el("modal-quotes-full").addEventListener("click", (e) => {
+      if (e.target === el("modal-quotes-full")) closeQuotesFullModal();
+    });
 
     async function saveRecordsPayload(records) {
       showLoading(true);
