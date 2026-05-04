@@ -7,6 +7,14 @@
       "url": "https://eoulrimstudio.cafe24.com/",
       "pinned": false,
       "order": 0
+    },
+    {
+      "id": "fe2cb2e4-d1a5-45a0-b480-2b9b0a592519",
+      "name": "레드프린팅",
+      "icon": "📦",
+      "url": "https://www.redprinting.co.kr/ko",
+      "pinned": false,
+      "order": 1
     }
   ]
 }
