@@ -7,22 +7,6 @@
       "url": "https://eoulrimstudio.cafe24.com/",
       "pinned": false,
       "order": 0
-    },
-    {
-      "id": "3bef8452-368a-42d1-8616-bdf4c8d57085",
-      "name": "카카오비즈니스",
-      "icon": "📞",
-      "url": "https://business.kakao.com/",
-      "pinned": false,
-      "order": 0
-    },
-    {
-      "id": "a3f77e03-7dfe-453f-a253-1f5494d32de1",
-      "name": "쿠팡",
-      "icon": "📦",
-      "url": "https://www.coupang.com/",
-      "pinned": false,
-      "order": 1
     }
   ]
 }
