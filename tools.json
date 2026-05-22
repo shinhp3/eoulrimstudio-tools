@@ -23,6 +23,14 @@
       "url": "https://channel.io/ko",
       "pinned": false,
       "order": 1
+    },
+    {
+      "id": "e7cd6442-f940-4418-b2e1-a56c395b2a66",
+      "name": "123",
+      "icon": "🔗",
+      "url": "https://desk.channel.io/#/channels/239228/team_chats/groups/569427",
+      "pinned": false,
+      "order": 2
     }
   ]
 }
