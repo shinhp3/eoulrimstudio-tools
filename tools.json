@@ -14,7 +14,7 @@
       "icon": "📦",
       "url": "https://www.redprinting.co.kr/ko",
       "pinned": false,
-      "order": 0
+      "order": 1
     },
     {
       "id": "a1dd597a-e35b-4f36-9fad-79c6214a6b21",
@@ -22,7 +22,7 @@
       "icon": "📞",
       "url": "https://channel.io/ko",
       "pinned": false,
-      "order": 1
+      "order": 2
     },
     {
       "id": "e7cd6442-f940-4418-b2e1-a56c395b2a66",
@@ -30,7 +30,15 @@
       "icon": "🔗",
       "url": "https://desk.channel.io/#/channels/239228/team_chats/groups/569427",
       "pinned": false,
-      "order": 2
+      "order": 3
+    },
+    {
+      "id": "2eef0a14-e353-4f17-807c-a14d6deb5abb",
+      "name": "잠허",
+      "icon": "📎",
+      "url": "https://smartstore.naver.com/jamghe3d",
+      "pinned": false,
+      "order": 4
     }
   ]
 }
