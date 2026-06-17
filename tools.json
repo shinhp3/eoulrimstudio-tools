@@ -39,6 +39,14 @@
       "url": "https://smartstore.naver.com/jamghe3d",
       "pinned": false,
       "order": 4
+    },
+    {
+      "id": "daaa7f1e-c735-41b5-a392-cdcaad01686d",
+      "name": "어울림 스마트스토어",
+      "icon": "✅",
+      "url": "https://smartstore.naver.com/eoulrimstudio",
+      "pinned": false,
+      "order": 5
     }
   ]
 }
