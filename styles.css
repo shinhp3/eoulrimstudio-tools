@@ -267,6 +267,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   text-align: left;
+  text-decoration: none;
   transition: background 0.15s, color 0.15s;
 }
 
@@ -1054,7 +1055,7 @@ details.dash-panel[open] > summary .dash-expand-chevron::before {
 }
 
 .hub-preview-pane__viewport {
-  --hub-preview-zoom: 0.85;
+  --hub-preview-zoom: 1;
   --hub-preview-slot-min-h: min(680px, calc(100dvh - 240px));
   flex: 1;
   min-height: 0;
