@@ -701,6 +701,36 @@
       el("loading-overlay").classList.toggle("visible", loadingCount > 0);
     }
 
+    /** GET /tools — 동시에 여러 곳에서 쓰면 요청 1회만 나가도록 공유 */
+    let toolsFetchPromise = null;
+    let cachedToolsPayload = null;
+
+    function invalidateToolsCache() {
+      toolsFetchPromise = null;
+      cachedToolsPayload = null;
+    }
+
+    function beginToolsFetch() {
+      if (!toolsFetchPromise) {
+        toolsFetchPromise = fetch(`${WORKER_URL}/tools`, { method: "GET" }).then(async (res) => {
+          const out = { ok: res.ok, status: res.status, sha: res.headers.get(SHA_HEADER) || "" };
+          if (res.ok) {
+            out.parsed = parseWorkerJson(await res.text(), "GET /tools");
+            cachedToolsPayload = { parsed: out.parsed, sha: out.sha };
+          }
+          return out;
+        });
+      }
+      return toolsFetchPromise;
+    }
+
+    async function resolveToolsFetch(existingPromise) {
+      if (cachedToolsPayload) {
+        return { ok: true, status: 200, sha: cachedToolsPayload.sha, parsed: cachedToolsPayload.parsed };
+      }
+      return existingPromise ? await existingPromise : await beginToolsFetch();
+    }
+
     function toast(message, type = "error") {
       const wrap = el("toast-container");
       const t = document.createElement("div");
@@ -1108,7 +1138,9 @@
 
     /** Worker GET /quotes + 각 본문 요약 */
     let dashboardQuoteMetas = [];
+    let dashboardQuoteListItems = [];
     let dashboardQuotesListError = false;
+    let quoteMetasLoadGen = 0;
     const DASHBOARD_QUOTES_PREVIEW_LIMIT = 5;
 
     function markDashboardStale() {
@@ -1268,57 +1300,112 @@
       return out;
     }
 
+    function createQuoteMetaStub(it) {
+      const name = String(it.name ?? it.filename ?? "").trim();
+      return {
+        name,
+        savedAt: "",
+        issue: "",
+        dispatch: "",
+        quoteSaveName: "",
+        statusLabel: "—",
+        companyName: "",
+        linesTableHtml: "",
+        err: false,
+        loading: true,
+      };
+    }
+
+    async function fetchSingleQuoteMeta(it) {
+      const name = String(it.name ?? it.filename ?? "").trim();
+      if (!name) {
+        return {
+          name: "",
+          savedAt: "",
+          issue: "",
+          dispatch: "",
+          quoteSaveName: "",
+          statusLabel: "—",
+          companyName: "",
+          linesTableHtml: "",
+          err: true,
+          loading: false,
+        };
+      }
+      try {
+        const res = await fetch(`${WORKER_URL}/quotes/${encodeURIComponent(name)}`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const savedAt = data.savedAt || data.serverSavedDate || "";
+        const issue = data.issueDate || "";
+        const dispatch = data.dispatchNo || "";
+        return {
+          name,
+          savedAt,
+          issue,
+          dispatch,
+          quoteSaveName: String(data.quoteSaveName ?? "").trim(),
+          statusLabel: quoteStatusLabelFromPayloadUnified(data),
+          companyName: String(data.companyName ?? "").trim(),
+          linesTableHtml: buildQuoteLinesTableHtml(data.lines || []),
+          err: false,
+          loading: false,
+        };
+      } catch {
+        return {
+          name,
+          savedAt: "",
+          issue: "",
+          dispatch: "",
+          quoteSaveName: "",
+          statusLabel: "—",
+          companyName: "",
+          linesTableHtml: "",
+          err: true,
+          loading: false,
+        };
+      }
+    }
+
     async function buildQuoteMetasFromItems(items) {
-      return mapPoolQuotes(items, 6, async (it) => {
-        const name = String(it.name ?? it.filename ?? "").trim();
-        if (!name) {
-          return {
-            name: "",
-            savedAt: "",
-            issue: "",
-            dispatch: "",
-            quoteSaveName: "",
-            statusLabel: "—",
-            companyName: "",
-            linesTableHtml: "",
-            err: true,
-          };
-        }
-        try {
-          const res = await fetch(`${WORKER_URL}/quotes/${encodeURIComponent(name)}`, {
-            method: "GET",
-            headers: { Accept: "application/json" },
-          });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const data = await res.json();
-          const savedAt = data.savedAt || data.serverSavedDate || "";
-          const issue = data.issueDate || "";
-          const dispatch = data.dispatchNo || "";
-          return {
-            name,
-            savedAt,
-            issue,
-            dispatch,
-            quoteSaveName: String(data.quoteSaveName ?? "").trim(),
-            statusLabel: quoteStatusLabelFromPayloadUnified(data),
-            companyName: String(data.companyName ?? "").trim(),
-            linesTableHtml: buildQuoteLinesTableHtml(data.lines || []),
-            err: false,
-          };
-        } catch {
-          return {
-            name,
-            savedAt: "",
-            issue: "",
-            dispatch: "",
-            quoteSaveName: "",
-            statusLabel: "—",
-            companyName: "",
-            linesTableHtml: "",
-            err: true,
-          };
-        }
+      return mapPoolQuotes(items, 6, (it) => fetchSingleQuoteMeta(it));
+    }
+
+    function mergeQuoteMetasAtOffset(offset, metas) {
+      metas.forEach((meta, i) => {
+        dashboardQuoteMetas[offset + i] = meta;
       });
+    }
+
+    /** 견적 목록은 즉시 반영하고, 본문은 미리보기 우선·백그라운드 로드 */
+    function scheduleQuoteMetasLoad(items) {
+      const gen = ++quoteMetasLoadGen;
+      dashboardQuoteListItems = items;
+      if (!items.length) {
+        dashboardQuoteMetas = [];
+        syncQuotesViews();
+        return;
+      }
+      dashboardQuoteMetas = items.map(createQuoteMetaStub);
+      syncQuotesViews();
+
+      void (async () => {
+        const previewCount = Math.min(DASHBOARD_QUOTES_PREVIEW_LIMIT, items.length);
+        if (previewCount > 0) {
+          const previewMetas = await buildQuoteMetasFromItems(items.slice(0, previewCount));
+          if (gen !== quoteMetasLoadGen) return;
+          mergeQuoteMetasAtOffset(0, previewMetas);
+          syncQuotesViews();
+        }
+        if (items.length <= previewCount) return;
+        const restMetas = await buildQuoteMetasFromItems(items.slice(previewCount));
+        if (gen !== quoteMetasLoadGen) return;
+        mergeQuoteMetasAtOffset(previewCount, restMetas);
+        syncQuotesViews();
+      })();
     }
 
     function sortQuoteMetasByIssue(metas, ascending) {
@@ -1397,7 +1484,8 @@
       const titleLarge = saveStr || fileStem || m.name || "저장 이름 없음";
 
       let stClass = "dashboard-status-pill is-complete";
-      if (m.statusLabel === "미작성") stClass = "dashboard-status-pill is-incomplete";
+      if (m.loading) stClass = "dashboard-status-pill is-unknown";
+      else if (m.statusLabel === "미작성") stClass = "dashboard-status-pill is-incomplete";
       else if (m.statusLabel === "—" || m.err) stClass = "dashboard-status-pill is-unknown";
 
       const card = document.createElement("div");
@@ -1429,7 +1517,13 @@
 
       header.append(kicker, titleWrap, dispatchSub);
 
-      if (m.err) {
+      if (m.loading) {
+        const warn = document.createElement("p");
+        warn.className = "dashboard-quote-warn";
+        warn.setAttribute("role", "status");
+        warn.textContent = "견적 본문을 불러오는 중입니다…";
+        summaryWrap.append(header, warn);
+      } else if (m.err) {
         const warn = document.createElement("p");
         warn.className = "dashboard-quote-warn";
         warn.setAttribute("role", "status");
@@ -1443,7 +1537,7 @@
       statusWrap.className = "dashboard-floor-status";
       const pill = document.createElement("span");
       pill.className = stClass;
-      pill.textContent = m.statusLabel || "—";
+      pill.textContent = m.loading ? "불러오는 중…" : m.statusLabel || "—";
       statusWrap.appendChild(pill);
 
       const datesCol = document.createElement("div");
@@ -1477,7 +1571,7 @@
       btnOpen.className = "btn btn-sm btn-primary";
       btnOpen.textContent = "수정";
       btnOpen.title = "견적 앱에서 이 견적 수정";
-      btnOpen.disabled = !m.name;
+      btnOpen.disabled = !m.name || m.loading;
       btnOpen.addEventListener("click", () => {
         window.open(receiptQuoteEditUrl(m.name), "_blank", "noopener,noreferrer");
       });
@@ -1486,7 +1580,7 @@
       btnDel.type = "button";
       btnDel.className = "btn btn-sm btn-danger";
       btnDel.textContent = "삭제";
-      btnDel.disabled = !m.name;
+      btnDel.disabled = !m.name || m.loading;
       btnDel.addEventListener("click", () => {
         openDashboardConfirm(
           `견적 «${m.name}»을(를) 서버에서 삭제할까요? 이 작업은 되돌릴 수 없습니다.`,
@@ -1520,7 +1614,7 @@
       floorTop.append(summaryWrap, statusWrap, datesCol, actionsCol);
       card.appendChild(floorTop);
 
-      if (!m.err && m.linesTableHtml) {
+      if (!m.loading && !m.err && m.linesTableHtml) {
         const details = document.createElement("details");
         details.className = "dashboard-lines-details";
         const summary = document.createElement("summary");
@@ -1607,6 +1701,7 @@
         if (!quotesRes.ok) {
           dashboardQuotesListError = true;
           dashboardQuoteMetas = [];
+          dashboardQuoteListItems = [];
           el("stat-quotes").textContent = "—";
           syncQuotesViews();
           toast(`저장 견적 목록 HTTP ${quotesRes.status}`);
@@ -1620,14 +1715,14 @@
           toast(String(e.message || e));
           dashboardQuotesListError = true;
           dashboardQuoteMetas = [];
+          dashboardQuoteListItems = [];
           el("stat-quotes").textContent = "—";
           syncQuotesViews();
           return;
         }
         dashboardQuotesListError = false;
         el("stat-quotes").textContent = String(items.length);
-        dashboardQuoteMetas = await buildQuoteMetasFromItems(items);
-        syncQuotesViews();
+        scheduleQuoteMetasLoad(items);
       } catch (e) {
         toast(String(e.message || e));
       } finally {
@@ -1635,16 +1730,23 @@
       }
     }
 
-    async function refreshDashboard() {
+    async function refreshDashboard(options = {}) {
       el("dashboard-errors").innerHTML = "";
       const dashErrMsgs = [];
       showLoading(true);
       try {
-        const [listRes, recordsRes, toolsRes, quotesRes] = await Promise.all([
+        let toolsFetch;
+        if (options.toolsPromise) {
+          toolsFetch = options.toolsPromise;
+        } else {
+          invalidateToolsCache();
+          toolsFetch = beginToolsFetch();
+        }
+        const [listRes, recordsRes, quotesRes, toolsResult] = await Promise.all([
           fetch(`${WORKER_URL}/list`, { method: "GET" }),
           fetch(`${WORKER_URL}/records`, { method: "GET" }),
-          fetch(`${WORKER_URL}/tools`, { method: "GET" }),
           fetch(`${WORKER_URL}/quotes`, { method: "GET", headers: { Accept: "application/json" } }),
+          toolsFetch,
         ]);
 
         let stlCount = "—";
@@ -1683,15 +1785,14 @@
         el("stat-records").textContent = recCount;
 
         let toolsCount = "—";
-        if (toolsRes.ok) {
+        if (toolsResult.ok && toolsResult.parsed) {
           try {
-            const tj = parseWorkerJson(await toolsRes.text(), "GET /tools");
-            toolsCount = String(Array.isArray(tj.items) ? tj.items.length : 0);
+            toolsCount = String(Array.isArray(toolsResult.parsed.items) ? toolsResult.parsed.items.length : 0);
           } catch (e) {
             dashErrMsgs.push(String(e.message || e));
           }
         } else {
-          dashErrMsgs.push(`도구 링크 HTTP ${toolsRes.status}`.trim());
+          dashErrMsgs.push(`도구 링크 HTTP ${toolsResult.status || "—"}`.trim());
         }
         el("stat-tools").textContent = toolsCount;
 
@@ -1715,7 +1816,12 @@
           dashboardQuotesListError = true;
         }
         el("stat-quotes").textContent = quotesCount;
-        dashboardQuoteMetas = dashboardQuotesListError ? [] : await buildQuoteMetasFromItems(quoteItems);
+        if (dashboardQuotesListError) {
+          dashboardQuoteMetas = [];
+          dashboardQuoteListItems = [];
+        } else {
+          scheduleQuoteMetasLoad(quoteItems);
+        }
 
         dashboardFlushErrors(dashErrMsgs);
         syncStlViews();
@@ -1898,7 +2004,7 @@
               return;
             }
             toast("삭제했습니다.", "success");
-            await refreshDashboard();
+            await refreshDashboardStlPanel();
           } catch (err) {
             toast(String(err.message || err));
           } finally {
@@ -2582,31 +2688,37 @@
     }
 
     async function refreshShaFromServer() {
-      const res = await fetch(`${WORKER_URL}/tools`, { method: "GET" });
-      if (!res.ok) return;
-      currentSha = res.headers.get(SHA_HEADER) || "";
+      const toolsResult = await beginToolsFetch();
+      if (!toolsResult.ok) return;
+      currentSha = toolsResult.sha || "";
     }
 
-    async function loadLinksFromStorage() {
+    function applyLinksFromToolsParsed(parsed, sha) {
+      if (!parsed.items || !Array.isArray(parsed.items)) {
+        throw new Error("tools.json 형식이 올바르지 않습니다.");
+      }
+      currentSha = sha || "";
+      if (parsed.items.length === 0) {
+        linksData = normalizeOrders({ items: getDefaultItems() });
+        ensureHubPinnedStoreInitialized(linksData.items);
+        applyLocalPinsToLinks();
+        return { needsPersist: true };
+      }
+      linksData = normalizeOrders({ items: parsed.items });
+      ensureHubPinnedStoreInitialized(linksData.items);
+      applyLocalPinsToLinks();
+      return { needsPersist: false };
+    }
+
+    async function loadLinksFromStorage(options = {}) {
       try {
-        const res = await fetch(`${WORKER_URL}/tools`, { method: "GET" });
-        if (!res.ok) {
-          throw new Error(`불러오기 실패 (${res.status})`);
+        const toolsResult = await resolveToolsFetch(options.toolsPromise);
+        if (!toolsResult.ok) {
+          throw new Error(`불러오기 실패 (${toolsResult.status})`);
         }
-        const parsed = parseWorkerJson(await res.text(), "GET /tools");
-        if (!parsed.items || !Array.isArray(parsed.items)) {
-          throw new Error("tools.json 형식이 올바르지 않습니다.");
-        }
-        currentSha = res.headers.get(SHA_HEADER) || "";
-        if (parsed.items.length === 0) {
-          linksData = normalizeOrders({ items: getDefaultItems() });
-          ensureHubPinnedStoreInitialized(linksData.items);
-          applyLocalPinsToLinks();
+        const { needsPersist } = applyLinksFromToolsParsed(toolsResult.parsed, toolsResult.sha);
+        if (needsPersist) {
           await persistLinks({ toastSuccess: false, silent: true });
-        } else {
-          linksData = normalizeOrders({ items: parsed.items });
-          ensureHubPinnedStoreInitialized(linksData.items);
-          applyLocalPinsToLinks();
         }
       } catch (e) {
         console.warn("링크 허브 초기 로드", e.message || e);
@@ -2641,7 +2753,17 @@
         if (toastSuccess) {
           toast(message || "저장했습니다.", "success");
         }
-        await refreshShaFromServer();
+        const shaFromRes = res.headers.get(SHA_HEADER) || data.sha || "";
+        if (shaFromRes) {
+          currentSha = shaFromRes;
+          if (cachedToolsPayload) {
+            cachedToolsPayload.sha = shaFromRes;
+            if (Array.isArray(body.items)) cachedToolsPayload.parsed = { items: body.items };
+          }
+        } else {
+          invalidateToolsCache();
+          await refreshShaFromServer();
+        }
         markDashboardStale();
       } catch (e) {
         if (silent) console.warn("persistLinks", e);
@@ -2986,10 +3108,9 @@
       initEmbedZoomControl("calendar-embed-zoom", "calendar-embed-zoom-value", "calendar-embed-viewport", EMBED_CALENDAR_ZOOM_KEY);
       initEmbedZoomControl("receipt-embed-zoom", "receipt-embed-zoom-value", "receipt-embed-viewport", EMBED_RECEIPT_ZOOM_KEY);
       initEmbedZoomControl("note-embed-zoom", "note-embed-zoom-value", "note-embed-viewport", EMBED_NOTE_ZOOM_KEY);
-      await refreshDashboard();
+      const toolsPromise = beginToolsFetch();
+      await Promise.all([refreshDashboard({ toolsPromise }), loadLinksFromStorage({ toolsPromise })]);
       buildEmojiGrid();
-      await loadLinksFromStorage();
-      if (dashboardNeedsFetch) await refreshDashboard();
       render();
     });
   </script>
